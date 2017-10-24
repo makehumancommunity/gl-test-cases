@@ -1,4 +1,4 @@
-# Results for "Does opengl with qt4 work?"
+# Results for "Does opengl with pyqt4 work?"
 
 ## Linux: python 2.7 native nvidia (ubuntu 16.04)
 
