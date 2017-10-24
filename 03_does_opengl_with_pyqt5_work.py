@@ -2,9 +2,7 @@
 
 from OpenGL.GLU import *
 from OpenGL.GL import *
-from PyQt5 import QtGui
 from PyQt5 import QtWidgets
-from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
 class MainWindow(QtWidgets.QWidget):
@@ -33,8 +31,8 @@ class glWidget(QOpenGLWidget):
         glLoadIdentity()
 
         glTranslatef(-2.5, 0.5, -6.0)
-        glColor3f( 1.0, 1.5, 0.0 );
-        glPolygonMode(GL_FRONT, GL_FILL);
+        glColor3f( 1.0, 1.5, 0.0 )
+        glPolygonMode(GL_FRONT, GL_FILL)
 
         glBegin(GL_TRIANGLES)
         glVertex3f(2.0,-1.2,0.0)
