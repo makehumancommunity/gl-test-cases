@@ -11,7 +11,9 @@ class MainWindow(QtWidgets.QWidget):
 
         self.widget = glWidget(self)
 
-        self.button = QtWidgets.QPushButton('Test', self)
+        self.button = QtWidgets.QPushButton('Exit', self)
+
+        self.button.clicked.connect(self.close)
 
         mainLayout = QtWidgets.QHBoxLayout()
         mainLayout.addWidget(self.widget)
