@@ -11,13 +11,15 @@ class MainWindow(QtGui.QWidget):
 
         self.widget = glWidget(self)
 
-        self.button = QtGui.QPushButton('Test', self)
+        self.button = QtGui.QPushButton('Exit', self)
 
         mainLayout = QtGui.QHBoxLayout()
         mainLayout.addWidget(self.widget)
         mainLayout.addWidget(self.button)
 
         self.setLayout(mainLayout)
+
+        self.button.clicked.connect(self.close)
 
 class glWidget(QGLWidget):
 

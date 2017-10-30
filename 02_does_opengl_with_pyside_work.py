@@ -11,13 +11,15 @@ class MainWindow(QtGui.QWidget):
 
         self.widget = glWidget(self)
 
-        self.button = QtGui.QPushButton('Test', self)
+        self.button = QtGui.QPushButton('Exit', self)
 
         mainLayout = QtGui.QHBoxLayout()
         mainLayout.addWidget(self.widget)
         mainLayout.addWidget(self.button)
 
         self.setLayout(mainLayout)
+
+        self.button.clicked.connect(self.close)
 
 class glWidget(QGLWidget):
 
@@ -31,8 +33,8 @@ class glWidget(QGLWidget):
         glLoadIdentity()
 
         glTranslatef(-2.5, 0.5, -6.0)
-        glColor3f( 1.0, 1.5, 0.0 );
-        glPolygonMode(GL_FRONT, GL_FILL);
+        glColor3f( 1.0, 1.5, 0.0 )
+        glPolygonMode(GL_FRONT, GL_FILL)
 
         glBegin(GL_TRIANGLES)
         glVertex3f(2.0,-1.2,0.0)
