@@ -17,3 +17,12 @@ Works (after fixing some py3 glitches with the original code sample)
 (not tested)
 
 
+
+
+## Linux python 3.5, mobile Intel/AMD hybrid (ubuntu 17.04 64Bit)
+
+Works for Glut, Pyside, PyQT4 and PyQT5
+
+## Linux python 3.5, mobile Intel/AMD hybrid (Windows 7 64Bit)
+
+Works for PyQT5 (Pyside not installed, Glut and PyQT4 not available)
