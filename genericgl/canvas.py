@@ -29,7 +29,7 @@ class Canvas(QOpenGLWidget):
     def initializeGL(self):
         self.profile = QOpenGLVersionProfile()
         self.profile.setVersion(2,0)
-        self.gl = self.context().versionFunctions(profile)
+        self.gl = self.context().versionFunctions(self.profile)
         self.gl.initializeOpenGLFunctions()
 
         print("------")
