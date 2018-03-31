@@ -15,6 +15,7 @@ For example:
 ## Existing test cases so far
 
 * 00 *Does qt5 and the opengl canvas work at all?* - Launch a window with a canvas without doing any GL operations on it, just to see if things crash before even starting.
+* 01 *Can the OpenGL functions be initialized?* - Launch a window with a canvas and try to create a GL "functions" object, but without actually doing anything with it.
 
 ## Results
 
@@ -22,5 +23,9 @@ If you have run a test on your computer, please add information about a) what ha
 
 ### 00 Does qt5 and the opengl canvas work at all?
 
-To be written
+* Ubuntu 16.04 /python 3.5.2 / nvidia: Works
+
+### 01 Can the OpenGL functions be initialized?
+
+* Ubuntu 16.04 /python 3.5.2 / nvidia: Works
 
