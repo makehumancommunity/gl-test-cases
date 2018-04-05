@@ -10,10 +10,10 @@ from PyQt5.QtCore import *
 
 class Canvas(QOpenGLWidget):
 
-    def __init__(self, parent=None, app=None):
+    def __init__(self, parent=None, app=None, requestedVersion=(2,0)):
 
-        print("\n\nINITIALIZATION OF GL CANVAS STARTS HERE\n\n")
         self.app = app
+        self.requestedVersion = requestedVersion
 
         super(Canvas, self).__init__(parent)
 
@@ -27,19 +27,29 @@ class Canvas(QOpenGLWidget):
 
     # Do not override this, instead override setupGL
     def initializeGL(self):
+
+        if self.app and self.app.debugMembers:
+
+            print("\n--- MEMBERS IN CANVAS ---")
+            for member in dir(self):
+                print(member)
+            print ("---\n")
+    
+            print("\n--- MEMBERS IN CONTEXT ---")
+            ctx = self.context()
+            for member in dir(ctx):
+                print(member)
+            print ("---\n")
+
         self.profile = QOpenGLVersionProfile()
-        self.profile.setVersion(2,0)
+        self.profile.setVersion(self.requestedVersion[0],self.requestedVersion[1])
         self.gl = self.context().versionFunctions(self.profile)
         self.gl.initializeOpenGLFunctions()
 
-        print("------")
-        print("PROFILE   : " + str(self.profile))
-        print("FUNCTIONS : " + str(self.gl))
-        print("------\n")
+        print("PROFILE              : " + str(self.profile))
+        print("FUNCTIONS            : " + str(self.gl))
 
         self.setupGL()
-
-        print("\n\nAT THIS POINT THE GL CONTEXT SHOULD BE FULLY SET UP\n\n")
 
     # Override this
     def setupGL(self):
