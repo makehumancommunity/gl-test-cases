@@ -20,6 +20,7 @@ For example:
 * 03 *Can we compile shaders?* - Since everything in GLES seems to require shaders, check if we can create a shader program with vertex and fragment shaders.
 * 04 *Draw a dot (hardcoded)* - Try to draw a 10 pixel large red dot on a black background. Note that point size, location (center screen) and color are controlled in the shaders, not in the python source. 
 * 05 *Draw a dot (dynamic)* - Try to draw a 10 pixel large red dot on a black background. Control location (upwardish, rightish) with shader attributes from inside python.
+* 06 *Use an array buffer to draw dots* - Set up a buffer array containing vertex data for for vertices, tie the buffer to the shader attribute, and use this approach to draw dots at the vertex positions. 
 
 ## Results
 
@@ -48,4 +49,9 @@ If you have run a test on your computer, please add information about a) what ha
 ### 05 Draw a dot (dynamic)
 
 * Ubuntu 16.04 / anaconda python 3.6.5 / nvidia: Works
+
+### 06 Use an array buffer to draw dots
+
+* Ubuntu 16.04 / anaconda python 3.6.5 / nvidia: Works
+
 
