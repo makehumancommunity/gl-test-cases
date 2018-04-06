@@ -18,7 +18,8 @@ For example:
 * 01 *Can the OpenGL functions be initialized?* - Launch a window with a canvas and try to create a GL "functions" object, but without actually doing anything with it.
 * 02 *Can we change the background color?* - Try to use glClearColor and glClear() to change the background color to red. This is interesting in order to know if any operations whatsoever are allowed on the GL functions object. 
 * 03 *Can we compile shaders?* - Since everything in GLES seems to require shaders, check if we can create a shader program with vertex and fragment shaders.
-* 04 *Draw a dot (hardcoded)* - Try to draw a 10 pixel large red dot on a black background. Note that point size, location and color are controlled in the shaders, not in the python source. 
+* 04 *Draw a dot (hardcoded)* - Try to draw a 10 pixel large red dot on a black background. Note that point size, location (center screen) and color are controlled in the shaders, not in the python source. 
+* 05 *Draw a dot (dynamic)* - Try to draw a 10 pixel large red dot on a black background. Control location (upwardish, rightish) with shader attributes from inside python.
 
 ## Results
 
@@ -41,6 +42,10 @@ If you have run a test on your computer, please add information about a) what ha
 * Ubuntu 16.04 /python 3.5.2 / nvidia: Works
 
 ### 04 Draw a dot (hardcoded)
+
+* Ubuntu 16.04 / anaconda python 3.6.5 / nvidia: Works
+
+### 05 Draw a dot (dynamic)
 
 * Ubuntu 16.04 / anaconda python 3.6.5 / nvidia: Works
 
