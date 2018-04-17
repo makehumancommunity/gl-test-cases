@@ -1,9 +1,8 @@
 #!/usr/bin/python3
 
 """
-Try to draw a ten pixel wide red dot at the center of the canvas. 
-For reference: the coordinates, color and size of the dot are 
-set in the shaders, not in the python source. 
+Try to draw a quad using vertex position data stored in an array rather
+than hardcoded in the shaders.
 """
 
 from genericgl import TestApplication
@@ -58,19 +57,28 @@ class TestCanvas(Canvas):
         self.somePosition = self.gl.glGetAttribLocation(self.program.programId(), "somePosition")
 
         # Use array rather than list in order to get control over actual data size
-        self.vertices = array.array('f', [-0.5, -0.5, 0.0, -0.5, 0.5, 0.0, 0.5, 0.5, 0.0, 0.5, -0.5, 0.0])
+        self.vertices = array.array('f', [
+            -0.5, -0.5, 0.0, 
+            -0.5, 0.5, 0.0, 
+            0.5, 0.5, 0.0, 
+            0.5, -0.5, 0.0
+        ])
 
         # Buffer info returns a tuple where the second part is number of elements in the array
         self.verticesLength = self.vertices.buffer_info()[1]
 
-        # Size in bytes for each element
-        self.verticesItemSize = self.vertices.itemsize
+        # Each vertex is specified with three values (XYZ)
+        self.arrayCellsPerVertex = 3
+
+        # Size in bytes for each vertex specification (self.vertices.itemsize is the size in bytes
+        # of a single array cell)
+        self.vertexSpecificationSize = self.vertices.itemsize * self.arrayCellsPerVertex
 
         # Total size in bytes for entire array
-        self.verticesDataLength = self.verticesLength * self.verticesItemSize
+        self.verticesDataLength = self.verticesLength * self.vertices.itemsize
 
         # Number of vertices in the array
-        self.numberOfVertices = int(self.verticesLength / 3)
+        self.numberOfVertices = int(self.verticesLength / self.arrayCellsPerVertex)
 
         # Tell gl to prepare a buffer
         self.vertexBuffer = self.gl.glGenBuffers(1)
@@ -82,11 +90,12 @@ class TestCanvas(Canvas):
         self.gl.glBufferData(self.gl.GL_ARRAY_BUFFER, self.verticesDataLength, self.vertices.tobytes(), self.gl.GL_STATIC_DRAW)
 
         # Say that the somePosition attribute should be read from the current array, that it should take three values at a
-        # time (x, y, z), and that they are of the type GL_FLOAT
+        # time (x, y, z), and that they are of the type GL_FLOAT. The last two values are number of extra bytes between 
+        # vertex values, and a byte offset for where we should start reading data.
         self.gl.glVertexAttribPointer(self.somePosition, 3, self.gl.GL_FLOAT, False, 0, 0)
 
-        # When reading from the current data, start at position 0
-        self.gl.glEnableVertexAttribArray(0)
+        # Connect the array to the somePosition variable
+        self.gl.glEnableVertexAttribArray(self.somePosition)
 
         # Tell GL that whenever we run glClear, this is the color that
         # should be used. We only need to do this once. 
