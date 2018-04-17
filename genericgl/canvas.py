@@ -19,10 +19,12 @@ class Canvas(QOpenGLWidget):
 
     # Override if necessary
     def minimumSizeHint(self):
+        print("Canvas minimumSizeHint")
         return QSize(50, 50)
 
     # Override if necessary
     def sizeHint(self):
+        print("Canvas sizeHint")
         return QSize(600, 600)
 
     # Do not override this, instead override setupGL
