@@ -25,6 +25,7 @@ For example:
 * 08 *Use an array buffer to draw a quad* - Set up a buffer array containing vertex data, tie the buffer to the shader attribute, and use this approach to draw a quad connecting the vertex positions. 
 * 09 *Mix position and color data in one array* - Set up a buffer array containing both position data and color data, and use this approach to draw a multicolored quad. 
 * 10 *Scale according to window size* - Use a "uniform" in the vertex shader to scale to compensate for window size. 
+* 11 *Rotate the quad* - Use a "uniform" in the vertex shader to rotate the drawn quad. (BUGGY: Does not compensate for window size)
 
 ## Results
 
