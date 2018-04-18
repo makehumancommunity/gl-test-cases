@@ -38,23 +38,12 @@ void main() {
                   0.0,  0.0,  1.0,  0.0,
                   0.0,  0.0,  0.0,  1.0);
 
-  // Use the declared attribute to control the location of the
-  // vertex currently being drawn. In addition we multiply it
-  // with scaling in order to compensate for window size.
-  // gl_Position = viewportScaling * somePosition;
+  // Transform vertex world coordinates to account for rotation
+  // around origin. 
+  vec4 rotatedCoordinates = rz * ry * rx * somePosition;
 
-  // TODO: Combine rotation and viewport scaling. I suspect order has a dramatic 
-  // influence on things, but I don't know which is the correct order. 
-  // It is also possible that "viewportScaling" should be a matrix rather
-  // than a vector. 
-  //
-  // Trying to simply multiply with the scaling causes weird results anyhow, so
-  // this doesn't work:
-  // gl_Position = viewportScaling * rz * ry * rx * somePosition;
-
-  // This works, but doesn't take window size into account, which can be seen
-  // if resizing the window
-  gl_Position = rz * ry * rx * somePosition;
+  // Finally multiply it with scaling in order to compensate for window size.
+  gl_Position = viewportScaling * rotatedCoordinates;
 
   // Fetch the color information we got from the attribute (ie from 
   // python) and simply forward it to the fragment shader via the
