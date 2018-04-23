@@ -1,3 +1,5 @@
+#version 120
+
 // This color is fetched from the vertex shader. Note that
 // there is a "varying" with the same name there. This causes
 // the variables to be connected automatically without us 
