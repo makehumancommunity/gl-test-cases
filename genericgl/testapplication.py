@@ -16,7 +16,11 @@ class _TestApplication(QApplication):
         self.debugMembers = False
 
         self.mainWin = QWidget()
-        self.mainWin.resize(600,600)
+
+        if glWidget == QOpenGLWidget:
+            # Only hard code size if we're not using a canvas
+            self.mainWin.resize(600,600)
+
         self.mainWin.setWindowTitle('TestApplication')
 
         self.mainWidget = glWidget()
