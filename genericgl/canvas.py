@@ -53,6 +53,9 @@ class Canvas(QOpenGLWidget):
 
         self.setupGL()
 
+        print("GL_SHADING_LANG..    : " + str(self.gl.GL_SHADING_LANGUAGE_VERSION))
+        
+
     # Override this
     def setupGL(self):
         print("WARNING: Running the generic setupGL. You probably wanted to override this.")
