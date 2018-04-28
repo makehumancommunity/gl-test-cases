@@ -1,0 +1,13 @@
+EFFECTIVE QT VERSION : 5.9.4
+REQUESTED GL VERSION : (2, 0)
+OPENGL MODULE TYPE   : LibGL
+Canvas sizeHint
+Canvas minimumSizeHint
+PROFILE              : <PyQt5.QtGui.QOpenGLVersionProfile object at 0x7fb84ed05588>
+FUNCTIONS            : <PyQt5._QOpenGLFunctions_2_0.QOpenGLFunctions_2_0 object at 0x7fb84ed688b8>
+PROGRAM              : <PyQt5.QtGui.QOpenGLShaderProgram object at 0x7fb84ed68708>
+Managed to load and parse the vertex shader
+Managed to load and parse the fragment shader
+GL_SHADING_LANG..    : 35724
+GL CURRENT CONTEXT   : <PyQt5.QtGui.QOpenGLContext object at 0x7fb84ed68828>
+EFFECTIVE GL VERSION : (4, 6)
