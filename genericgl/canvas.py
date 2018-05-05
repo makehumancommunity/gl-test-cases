@@ -55,7 +55,15 @@ class Canvas(QOpenGLWidget):
 
         self.setupGL()
 
-        info("GL_SHADING_LANG",self.gl.GL_SHADING_LANGUAGE_VERSION)
+        glVer = self.gl.glGetString(self.gl.GL_VERSION)
+        glLangVer = self.gl.glGetString(self.gl.GL_SHADING_LANGUAGE_VERSION)
+        glVendor = self.gl.glGetString(self.gl.GL_VENDOR)
+        glRenderer = self.gl.glGetString(self.gl.GL_RENDERER)
+
+        info("GL_VERSION", glVer)
+        info("GL_SHADING_LANGUAGE_VERSION",glLangVer)
+        info("GL_VENDOR", glVendor)
+        info("GL_RENDERER", glRenderer)
         
 
     # Override this
