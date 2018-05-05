@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import QApplication, QWidget, QOpenGLWidget, QVBoxLayout
 from PyQt5.QtGui import QSurfaceFormat, QOpenGLContext
 from PyQt5.QtCore import QT_VERSION_STR
 
+from .simpledebug import info
+
 import sys
 
 class _TestApplication(QApplication):
@@ -31,17 +33,17 @@ class _TestApplication(QApplication):
         self.mainWin.show()
 
         ctx = QOpenGLContext.currentContext()
-        print("GL CURRENT CONTEXT   : " + str(ctx))
+        info("GL CURRENT CONTEXT",ctx)
 
         format = ctx.format()
 
-        print("EFFECTIVE GL VERSION : " + str(ctx.format().version()))
+        info("EFFECTIVE GL VERSION",ctx.format().version())
 
 
 def TestApplication(args, glWidgetClass = QOpenGLWidget, requestedGLVersion = (2,0)):
 
-    print("EFFECTIVE QT VERSION : " + str(QT_VERSION_STR))
-    print("REQUESTED GL VERSION : " + str(requestedGLVersion))
+    info("EFFECTIVE QT VERSION",QT_VERSION_STR)
+    info("REQUESTED GL VERSION",requestedGLVersion)
 
     glType = QOpenGLContext.openGLModuleType()
 
@@ -49,11 +51,11 @@ def TestApplication(args, glWidgetClass = QOpenGLWidget, requestedGLVersion = (2
     format.setDepthBufferSize(24)
 
     if glType == QOpenGLContext.LibGL:
-        print("OPENGL MODULE TYPE   : LibGL")
+        info("OPENGL MODULE TYPE","LibGL")
         format.setVersion(requestedGLVersion[0],requestedGLVersion[1]);
         format.setProfile(QSurfaceFormat.CompatibilityProfile);
     else:
-        print("OPENGL MODULE TYPE   : LibGLES")
+        info("OPENGL MODULE TYPE","LibGLES")
         format.setVersion(2,0);
 
     QSurfaceFormat.setDefaultFormat(format);

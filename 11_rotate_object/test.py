@@ -7,6 +7,7 @@ for window size. Note the new "uniform" in the vertex shader.
 
 from genericgl import TestApplication
 from genericgl import Canvas
+from genericgl import info
 
 import sys
 import array
@@ -38,7 +39,7 @@ class TestCanvas(Canvas):
 
     # Use a non-square initial size
     def sizeHint(self):
-        print("Canvas sizeHint")
+        info("TESTCANVAS","using overridden sizeHint()")
         return QSize(600, 600)
 
     def setupGL(self):
@@ -48,15 +49,15 @@ class TestCanvas(Canvas):
         self.gl.glEnable(self.gl.GL_VERTEX_PROGRAM_POINT_SIZE)
 
         self.program = QOpenGLShaderProgram(self.context())
-        print("PROGRAM              : " + str(self.program))
+        info("PROGRAM",self.program)
 
         # addShaderFromSourceCode() only returns a bool telling whether everything went well
 
         if self.program.addShaderFromSourceCode(QOpenGLShader.Vertex, self.vertexShaderSource):
-            print("Managed to load and parse the vertex shader")
+            info("VERTEX SHADER","Managed to load and parse the vertex shader")
 
         if self.program.addShaderFromSourceCode(QOpenGLShader.Fragment, self.fragmentShaderSource):
-            print("Managed to load and parse the fragment shader")
+            info("FRAGMENT SHADER","Managed to load and parse the fragment shader")
 
         # Compile and bind the shader program to the current context
         self.program.link()

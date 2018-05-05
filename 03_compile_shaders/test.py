@@ -6,6 +6,7 @@ Try to compile and load glsl shaders.
 
 from genericgl import TestApplication
 from genericgl import Canvas
+from genericgl import info
 
 import sys
 
@@ -32,15 +33,15 @@ class TestCanvas(Canvas):
     def setupGL(self):
 
         self.program = QOpenGLShaderProgram(self.context())
-        print("PROGRAM: " + str(self.program))
+        info("PROGRAM",self.program)
 
         # addShaderFromSourceCode() only returns a bool telling whether everything went well
 
         if self.program.addShaderFromSourceCode(QOpenGLShader.Vertex, self.vertexShaderSource):
-            print("Managed to load and parse the vertex shader")
+            info("VERTEX SHADER","Managed to load and parse the vertex shader")
 
         if self.program.addShaderFromSourceCode(QOpenGLShader.Fragment, self.fragmentShaderSource):
-            print("Managed to load and parse the fragment shader")
+            info("FRAGMENT SHADER","Managed to load and parse the fragment shader")
 
         # Compile and bind the shader program to the current context
         self.program.link()
