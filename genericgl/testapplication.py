@@ -35,11 +35,10 @@ class _TestApplication(QApplication):
         if glWidget == QOpenGLWidget:
             # Only hard code size if we're not using a canvas
             self.mainWin.resize(600,600)
-            self.mainWidget = glWidget()
-        else:
-            self.mainWidget = glWidget(requestedGLVersion = requestedGLVersion)
 
         self.mainWin.setWindowTitle('TestApplication')
+
+        self.mainWidget = glWidget()
 
         self.layout = QVBoxLayout(self.mainWin)
         self.layout.addWidget(self.mainWidget)
