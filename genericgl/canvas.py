@@ -12,10 +12,10 @@ from .simpledebug import info
 
 class Canvas(QOpenGLWidget):
 
-    def __init__(self, parent=None, app=None, requestedVersion=(2,0)):
+    def __init__(self, parent=None, app=None, requestedGLVersion=(2,1)):
 
         self.app = app
-        self.requestedVersion = requestedVersion
+        self.requestedVersion = requestedGLVersion
 
         super(Canvas, self).__init__(parent)
 
