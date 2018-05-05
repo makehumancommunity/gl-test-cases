@@ -1,3 +1,5 @@
+#version 120
+
 // Declare an attribute that can be used from the outside to control 
 // the behavior of the shader, in this case the location of a vertex
 attribute vec4 somePosition;

@@ -1,3 +1,5 @@
+#version 120
+
 // Declare an attribute that can be used from the outside to control the 
 // position of the vertex currently being drawn
 attribute vec4 somePosition;

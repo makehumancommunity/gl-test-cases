@@ -1,3 +1,5 @@
+#version 120
+
 // Declare an attribut (in practice parameter) that can be used
 // from the outside to control the behavior of the shader
 attribute vec4 somePosition;
