@@ -12,8 +12,21 @@ class _TestApplication(QApplication):
 
     mainWin = None
 
-    def __init__(self, args, glWidget = QOpenGLWidget):
+    def __init__(self, args, glWidget = QOpenGLWidget, requestedGLVersion = (2,0)):
         super(_TestApplication,self).__init__(args)
+
+        glType = QOpenGLContext.openGLModuleType()
+    
+        format = QSurfaceFormat()
+        format.setDepthBufferSize(24)
+    
+        if glType == QOpenGLContext.LibGL:
+            info("OPENGL MODULE TYPE","LibGL")
+            format.setVersion(requestedGLVersion[0],requestedGLVersion[1]);
+            format.setProfile(QSurfaceFormat.CompatibilityProfile);
+            QSurfaceFormat.setDefaultFormat(format);
+        else:
+            info("OPENGL MODULE TYPE","Unknown or LibGLES  <--- this is likely to cause problems down the line")
 
         self.debugMembers = False
 
@@ -45,22 +58,7 @@ def TestApplication(args, glWidgetClass = QOpenGLWidget, requestedGLVersion = (2
     info("EFFECTIVE QT VERSION",QT_VERSION_STR)
     info("REQUESTED GL VERSION",requestedGLVersion)
 
-    glType = QOpenGLContext.openGLModuleType()
-
-    format = QSurfaceFormat()
-    format.setDepthBufferSize(24)
-
-    if glType == QOpenGLContext.LibGL:
-        info("OPENGL MODULE TYPE","LibGL")
-        format.setVersion(requestedGLVersion[0],requestedGLVersion[1]);
-        format.setProfile(QSurfaceFormat.CompatibilityProfile);
-    else:
-        info("OPENGL MODULE TYPE","LibGLES")
-        format.setVersion(2,0);
-
-    QSurfaceFormat.setDefaultFormat(format);
-
-    app = _TestApplication(args, glWidgetClass)
+    app = _TestApplication(args, glWidgetClass, requestedGLVersion)
     app.exec_()
     del app
     sys.exit()
