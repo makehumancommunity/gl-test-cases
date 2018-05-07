@@ -44,10 +44,6 @@ class TestCanvas(Canvas):
 
     def setupGL(self):
 
-        # Take point size instructions in shaders into account
-        self.gl.glEnable(self.gl.GL_POINT_SIZE)
-        self.gl.glEnable(self.gl.GL_VERTEX_PROGRAM_POINT_SIZE)
-
         self.program = QOpenGLShaderProgram(self.context())
         info("PROGRAM",self.program)
 
