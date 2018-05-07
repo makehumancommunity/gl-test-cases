@@ -1,8 +1,11 @@
 #!/usr/bin/python3
 
 """
-This is largely the same example as 09, but we also scale to compensate
-for window size. Note the new "uniform" in the vertex shader.
+This is largely the same example as 11, but with mouse rotation added. Use 
+left button for XY and right button for ZX.
+
+As there is no perspective mode nor lighting implemented yet, one will have
+to use a bit of imagination to identify the actual rotation.
 """
 
 from genericgl import TestApplication
