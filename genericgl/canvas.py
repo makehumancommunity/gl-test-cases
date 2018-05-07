@@ -104,8 +104,6 @@ class Canvas(QOpenGLWidget):
 
         self.dumpGLLogMessages("initializeGL()")
 
-        self.setupGL()
-
         glVer = self.gl.glGetString(self.gl.GL_VERSION)
         glLangVer = self.gl.glGetString(self.gl.GL_SHADING_LANGUAGE_VERSION)
         glVendor = self.gl.glGetString(self.gl.GL_VENDOR)
@@ -116,7 +114,7 @@ class Canvas(QOpenGLWidget):
         info("GL_VENDOR", glVendor)
         info("GL_RENDERER", glRenderer)
 
-        
+        self.setupGL()
 
     # Override this
     def setupGL(self):
