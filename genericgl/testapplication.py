@@ -24,6 +24,7 @@ class _TestApplication(QApplication):
             info("OPENGL MODULE TYPE","LibGL")
             format.setVersion(requestedGLVersion[0],requestedGLVersion[1]);
             format.setProfile(QSurfaceFormat.CompatibilityProfile);
+            format.setOption(QSurfaceFormat.DebugContext);
             QSurfaceFormat.setDefaultFormat(format);
         else:
             info("OPENGL MODULE TYPE","Unknown or LibGLES  <--- this is likely to cause problems down the line")

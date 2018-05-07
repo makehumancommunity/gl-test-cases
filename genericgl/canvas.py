@@ -29,8 +29,57 @@ class Canvas(QOpenGLWidget):
         info("CANVAS","sizeHint() is not overridden")
         return QSize(600, 600)
 
+    def dumpGLLogMessages(self, location = None):
+
+        currentError = self.gl.glGetError()
+        while currentError != self.gl.GL_NO_ERROR:
+            msg = "UNKNOWN GL ERROR"
+            if currentError == self.gl.GL_INVALID_OPERATION:
+                msg = "GL_INVALID_OPERATION"
+            if currentError == self.gl.GL_INVALID_ENUM:
+                msg = "GL_INVALID_ENUM"
+            if currentError == self.gl.GL_INVALID_VALUE:
+                msg = "GL_INVALID_VALUE"
+            if currentError == self.gl.GL_OUT_OF_MEMORY:
+                msg = "GL_OUT_OF_MEMORY"
+            if currentError == self.gl.GL_INVALID_FRAMEBUFFER_OPERATION:
+                msg = "GL_INVALID_FRAMEBUFFER_OPERATION"
+
+            if location is None:
+                print("\n" + msg + "!\n")
+            else:
+                print("\n" + msg + " at location \"" + location + "\"!\n")
+
+            currentError = self.gl.glGetError()
+
+        if self.glLog is None:
+            return
+
+        messages = self.glLog.loggedMessages()
+        if messages is None or len(messages) < 1:
+            message = "No messages have been logged"
+            if not location is None:
+                message = message + " at location \"" + location + "\""
+            info("GL DEBUG LOGGER", message)
+        else:
+            if location is None:
+                print("\n--- LOG MESSAGES ---")
+            else:
+                print("\n--- " + location + " ---")
+            for message in messages:
+                print(message.message())                
+
+            print("---\n")
+
     # Do not override this, instead override setupGL
     def initializeGL(self):
+
+        self.glLog = QOpenGLDebugLogger(self);
+        if not self.glLog.initialize():
+            info("GL DEBUG LOGGER","Unable to initialize GL logging")
+            self.glLog = None
+        else:
+            self.glLog.enableMessages(sources = QOpenGLDebugMessage.AnySource, types = QOpenGLDebugMessage.AnyType, severities = QOpenGLDebugMessage.AnySeverity)
 
         if self.app and self.app.debugMembers:
 
@@ -50,8 +99,15 @@ class Canvas(QOpenGLWidget):
         self.gl = self.context().versionFunctions(self.profile)
         self.gl.initializeOpenGLFunctions()
 
+        # Enable GL capabilities we need
+        self.gl.glEnable(self.gl.GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        self.gl.glEnable(self.gl.GL_DEPTH_TEST);
+        self.gl.glEnable(self.gl.GL_VERTEX_PROGRAM_POINT_SIZE)
+
         info("PROFILE",self.profile)
         info("FUNCTIONS",self.gl)
+
+        self.dumpGLLogMessages("initializeGL()")
 
         self.setupGL()
 
@@ -64,6 +120,7 @@ class Canvas(QOpenGLWidget):
         info("GL_SHADING_LANGUAGE_VERSION",glLangVer)
         info("GL_VENDOR", glVendor)
         info("GL_RENDERER", glRenderer)
+
         
 
     # Override this
