@@ -56,12 +56,7 @@ class Canvas(QOpenGLWidget):
             return
 
         messages = self.glLog.loggedMessages()
-        if messages is None or len(messages) < 1:
-            message = "No messages have been logged"
-            if not location is None:
-                message = message + " at location \"" + location + "\""
-            info("GL DEBUG LOGGER", message)
-        else:
+        if not messages is None and len(messages) > 0:
             if location is None:
                 print("\n--- LOG MESSAGES ---")
             else:
