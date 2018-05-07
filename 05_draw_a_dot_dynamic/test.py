@@ -60,6 +60,8 @@ class TestCanvas(Canvas):
         # should be used. We only need to do this once. 
         self.gl.glClearColor(0.1, 0.1, 0.1, 1.0)
 
+        self.dumpGLLogMessages("setupGL()")
+
     def paintGL(self):
         self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT | self.gl.GL_DEPTH_BUFFER_BIT)
         
@@ -68,6 +70,8 @@ class TestCanvas(Canvas):
 
         # Mode, starting at vertex number, number of vertices to draw
         self.gl.glDrawArrays(self.gl.GL_POINTS,0,1)
+
+        self.dumpGLLogMessages("paintGL()")
 
     def resizeGL(self, width, height):
         pass

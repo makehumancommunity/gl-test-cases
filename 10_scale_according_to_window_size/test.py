@@ -129,6 +129,8 @@ class TestCanvas(Canvas):
         # should be used. We only need to do this once. 
         self.gl.glClearColor(0.1, 0.1, 0.1, 1.0)
 
+        self.dumpGLLogMessages("setupGL()")
+
     def paintGL(self):
         self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT | self.gl.GL_DEPTH_BUFFER_BIT)
 
@@ -138,6 +140,8 @@ class TestCanvas(Canvas):
         
         # Draw a quad starting at vertex number. Since we enabled attribarrays, it will fetch data from the array buffer
         self.gl.glDrawArrays(self.gl.GL_QUADS, 0, self.numberOfVertices)
+
+        self.dumpGLLogMessages("paintGL()")
 
     def resizeGL(self, width, height):
         scaleX = 1.0
