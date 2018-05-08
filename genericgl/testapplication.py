@@ -53,6 +53,16 @@ class _TestApplication(QApplication):
 
         info("EFFECTIVE GL VERSION",ctx.format().version())
 
+        self.aboutToQuit.connect(self.applicationClosing)
+
+    def applicationClosing(self, *args):
+
+        info("APPLICATION","about to be destroyed")
+
+        if not self.mainWidget is None and hasattr(self.mainWidget, "_on_destroyed"):
+            self.mainWidget._on_destroyed()
+
+
 def TestApplication(args, glWidgetClass = QOpenGLWidget, requestedGLVersion = (2,1)):
 
     info("EFFECTIVE QT VERSION",QT_VERSION_STR)

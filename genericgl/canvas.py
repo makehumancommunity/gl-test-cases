@@ -19,6 +19,12 @@ class Canvas(QOpenGLWidget):
 
         super(Canvas, self).__init__(parent)
 
+        self.destroyed.connect(self._on_destroyed)
+
+    def _on_destroyed(self, *args):
+        info("CANVAS","about to be destroyed")
+        self.closeGL()
+
     # Override if necessary
     def minimumSizeHint(self):
         info("CANVAS","minimumSizeHint() is not overridden")
@@ -127,4 +133,8 @@ class Canvas(QOpenGLWidget):
     # Override this
     def resizeGL(self, width, height):
         info("CANVAS","setupGL() is not overridden")
+
+    # Override this
+    def closeGL(self):
+        info("CANVAS","closeGL() is not overridden")
 
