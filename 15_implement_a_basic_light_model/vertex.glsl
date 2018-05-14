@@ -59,7 +59,9 @@ void main() {
   vec4 rotatedNormal = rz * ry * rx * inputNormal;
   vec4 normalizedRotatedNormal = normalize(rotatedNormal);
   vec4 normalizedLightDirection = normalize(lampPosition);
-  float angleCoefficient = max(0.0, dot(normalizedRotatedNormal, normalizedLightDirection));
+
+  float dotProduct = abs(dot(normalizedRotatedNormal, normalizedLightDirection));
+  float angleCoefficient = max(0.0, dotProduct);
   float rgbValue = min(1.0, inputColor.x + angleCoefficient);
   vec4 modifiedColor = vec4(rgbValue, rgbValue, rgbValue, 1.0);
 
