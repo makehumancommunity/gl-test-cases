@@ -1,9 +1,7 @@
 #!/usr/bin/python3
 
 """
-Try to draw a ten pixel wide red dot at the center of the canvas. 
-For reference: the coordinates, color and size of the dot are 
-set in the shaders, not in the python source. 
+Draw a triangle using a vertex array buffer. 
 """
 
 from genericgl import TestApplication
