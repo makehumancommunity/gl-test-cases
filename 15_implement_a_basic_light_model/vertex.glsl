@@ -13,7 +13,7 @@ varying vec4 outputColor;
 
 // Use a constant color for all vertices (will be modified by 
 // light position)
-uniform vec4 inputColor = vec4(0.3, 0.3, 0.3, 1.0);
+uniform vec3 inputColor = vec3(1.0, 0.3, 0.3);
 
 // Put a directional light at front left 
 uniform vec4 lampPosition = vec4(-1.0, 1.0, -1.0, 1.0);
@@ -60,10 +60,12 @@ void main() {
   vec4 normalizedRotatedNormal = normalize(rotatedNormal);
   vec4 normalizedLightDirection = normalize(lampPosition);
 
-  float dotProduct = abs(dot(normalizedRotatedNormal, normalizedLightDirection));
-  float angleCoefficient = max(0.0, dotProduct);
-  float rgbValue = min(1.0, inputColor.x + angleCoefficient);
-  vec4 modifiedColor = vec4(rgbValue, rgbValue, rgbValue, 1.0);
+  float dotProduct = dot(normalizedRotatedNormal, normalizedLightDirection);
+  float diffuseLightCoefficient = max(0.0, dotProduct);
+
+  vec3 colors = inputColor * diffuseLightCoefficient;
+  
+  vec4 modifiedColor = vec4(colors.r, colors.g, colors.b, 1.0);
 
   // Fetch the color information we got from the attribute (ie from 
   // python) and simply forward it to the fragment shader via the
