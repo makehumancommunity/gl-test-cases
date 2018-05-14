@@ -28,6 +28,7 @@ For example:
 * 11 *Rotate the quad* - Use a "uniform" in the vertex shader to rotate the drawn quad. 
 * 12 *Mouse rotation* - Draw a quad and implement mouse rotation to be able to rotate it. Since there is no perspective nor lighting yet, it might not look overly impressing. 
 * 13 *Draw two triangles using Qt's wrappers* - Use Qt's VAO and VBO wrappers to draw two separate triangles. 
+* 14 *Draw a cube using shared indices* - Use the glDrawElements call to draw a cube where vertices are shared between faces.
 
 ## Results
 
@@ -86,6 +87,10 @@ If you have run a test on your computer, please add information about a) what ha
 * Ubuntu 16.04 / anaconda python 3.6.5 / nvidia: Works
 
 ### 13 Draw two triangles using Qt's wrappers
+
+* Ubuntu 16.04 / anaconda python 3.6.5 / nvidia: Works
+
+### 14 Draw a cube using shared indices
 
 * Ubuntu 16.04 / anaconda python 3.6.5 / nvidia: Works
 
