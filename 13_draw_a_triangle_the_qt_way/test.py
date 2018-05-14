@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 
 """
-This is the same as example 07, except that we use Qt wrappers around VBO and VAO to draw a 
-triangle rather than talking directly to opengl.
+Use Qt's wrappers for Vertex Array Objects (VAO) and Vertex Buffer Objects (VBO) to
+draw two triangles. 
 """
 
 from genericgl import TestApplication
-from genericgl import Canvas
+from genericgl import RotatableCanvas
 from genericgl import info
 
 import sys
@@ -16,7 +16,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
 
-class TestCanvas(Canvas):
+class TestCanvas(RotatableCanvas):
 
     def __init__(self):
 
@@ -31,6 +31,10 @@ class TestCanvas(Canvas):
 
         if self.fragmentShaderSource is None:
             raise Exception("Could not load the source for the fragment shader")
+
+        # Use an initial scale assuming width = height (should always be overwritten
+        # in the resizeGL method below)
+        self.currentScaling = QVector4D(1.0, 1.0, 1.0, 1.0)
 
         super(TestCanvas,self).__init__()
 
@@ -51,14 +55,24 @@ class TestCanvas(Canvas):
         self.program.link()
         self.program.bind()
 
-        # Use array rather than list in order to get control over actual data size
-        self.vertices = array.array('f', [-0.5, -0.5, 0.0, 0.5, 0.5, 0.0, 0.5, -0.5, 0.0])
+        # Find the uniform location for controling the viewport scale of the vertex positions
+        self.viewportScaling = self.program.uniformLocation("viewportScaling")
+
+        # Find the uniform location for controling the rotation of the object
+        self.objectRotation = self.program.uniformLocation("objectRotation")
+
+        # Use arrays to specify two different triangles. 
+        self.vertices1 = array.array('f', [-0.5, -0.5, 0.0, 0.5, 0.5, 0.0, 0.5, -0.5, 0.0])
+        self.vertices2 = array.array('f', [-0.8, 0.8, 0.0, -0.1, 0.8, 0.0, -0.8, 0.1, 0.0])
+
+        # We'll take a shortcut here and use the same size/length for both objects. In reality
+        # the following calculations should be done for each vertex array.
 
         # Buffer info returns a tuple where the second part is number of elements in the array
-        self.verticesLength = self.vertices.buffer_info()[1]
+        self.verticesLength = self.vertices1.buffer_info()[1]
 
         # Size in bytes for each element
-        self.verticesItemSize = self.vertices.itemsize
+        self.verticesItemSize = self.vertices1.itemsize
 
         # Total size in bytes for entire array
         self.verticesDataLength = self.verticesLength * self.verticesItemSize
@@ -66,33 +80,56 @@ class TestCanvas(Canvas):
         # Number of vertices in the array
         self.numberOfVertices = int(self.verticesLength / 3)
 
+        # Start specifying the first Vertex Array Object (VAO). The upside of this approach
+        # is that we can keep all settings pertaining to the Vertex Buffer Object (VBO) specified 
+        # here and not have to specify them again at draw time. This will make it a lot easier 
+        # to keep multiple conceptual graphical objects around.
+        #
+        # The VAO will remember all that was specified for its VBOs between the VAOs bind() and
+        # its close()
+        self.triangleVAO1 = QOpenGLVertexArrayObject()
+        self.triangleVAO1.create()
+        self.triangleVAO1.bind()
+ 
         # Instead of asking GL directly to allocate an array buffer, we ask QT
         # to set up one for us. In GL language we are creating a "VBO" here. 
-        self.verticesBuffer = QOpenGLBuffer()
-        self.verticesBuffer.create()
-        self.verticesBuffer.bind()
-        self.verticesBuffer.setUsagePattern(QOpenGLBuffer.StaticDraw)
-        self.verticesBuffer.allocate(self.vertices.tobytes(), self.verticesDataLength)
-        
-        # We then wrap this in another layer to get what GL calls "VBO". The upside
-        # of this approach is that we can keep all settings pertaining to the VBO and
-        # not have to specify them again at draw time. This will make it a lot easier 
-        # to keep multiple VBOs around. 
-        self.triangleVAO = QOpenGLVertexArrayObject()
-        self.triangleVAO.create()
-        self.triangleVAO.bind()
-      
-        # Operations we perform between bind() and release() of the VAO will be 
-        # remembered when we bind it again at a later time. Here we will specify 
-        # that there is a program attribute that should get data that is sent
+        self.verticesBuffer1 = QOpenGLBuffer()
+        self.verticesBuffer1.create()
+        self.verticesBuffer1.bind()
+        self.verticesBuffer1.setUsagePattern(QOpenGLBuffer.StaticDraw)
+        self.verticesBuffer1.allocate(self.vertices1.tobytes(), self.verticesDataLength)
+
+        # Here we specify that there is a program attribute that should get data that is sent
         # to it (by glDraw* operations), and in what form the data will arrive. 
         self.program.enableAttributeArray( self.program.attributeLocation("somePosition") )
         self.program.setAttributeBuffer( self.program.attributeLocation("somePosition"), self.gl.GL_FLOAT, 0, 3, 0 )
+        
+        # Once we have set up everything related to the VBO, we can release that and the 
+        # related VAO.
+        self.verticesBuffer1.release()
+        self.triangleVAO1.release()
 
-        # Once we have set up all object we can release them until we'll need them again at
-        # draw time
-        self.triangleVAO.release()
-        self.verticesBuffer.release()
+        # Start specifying the second VAO
+        self.triangleVAO2 = QOpenGLVertexArrayObject()
+        self.triangleVAO2.create()
+        self.triangleVAO2.bind()
+ 
+        # Create the second VBO
+        self.verticesBuffer2 = QOpenGLBuffer()
+        self.verticesBuffer2.create()
+        self.verticesBuffer2.bind()
+        self.verticesBuffer2.setUsagePattern(QOpenGLBuffer.StaticDraw)
+        self.verticesBuffer2.allocate(self.vertices2.tobytes(), self.verticesDataLength)
+
+        # Specify location of vertex attribute in the shader. 
+        self.program.enableAttributeArray( self.program.attributeLocation("somePosition") )
+        self.program.setAttributeBuffer( self.program.attributeLocation("somePosition"), self.gl.GL_FLOAT, 0, 3, 0 )
+        
+        # Release the second VAO and VBO
+        self.verticesBuffer2.release()
+        self.triangleVAO2.release()
+      
+        # Release the program until we need to actually draw something. 
         self.program.release()
 
         self.gl.glClearColor(0.1, 0.1, 0.1, 1.0)
@@ -102,27 +139,64 @@ class TestCanvas(Canvas):
     def paintGL(self):
         self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT | self.gl.GL_DEPTH_BUFFER_BIT)
         
-        # We re-enable the program and the VAO. Note that we don't need to re-enable the VBO. 
+        # We re-enable the program and use it for all draw operations (both VAOs use
+        # this program)
         self.program.bind()
-        self.triangleVAO.bind()
 
-        # Draw a triangle starting at vertex number. Since we enabled attribarrays, it will fetch data from the array buffer
+        # Set current rotation as a uniform
+        self.currentRotation = QVector3D(self.xRot / 16, self.yRot / 16, self.zRot / 16)
+        self.program.setUniformValue(self.objectRotation, self.currentRotation)
+
+        # Before painting we set the scaling "uniform" parameter in the vertex shader.
+        # This will be used to scale the vertex positions. 
+        self.program.setUniformValue(self.viewportScaling, self.currentScaling)
+ 
+        # Activate the first VAO
+        self.triangleVAO1.bind()
+
+        # Draw the VAO. It will remember which VBO was specified for it. 
         self.gl.glDrawArrays(self.gl.GL_TRIANGLES, 0, self.numberOfVertices)
 
-        # Release the VAO and the program until the next time we need to draw. 
-        self.triangleVAO.release()
+        # Release the first VAO
+        self.triangleVAO1.release()
+
+        # Activate the second VAO
+        self.triangleVAO2.bind()
+
+        # Draw the VAO. It will remember which VBO was specified for it. 
+        self.gl.glDrawArrays(self.gl.GL_TRIANGLES, 0, self.numberOfVertices)
+
+        # Release the second VAO
+        self.triangleVAO2.release()
+
+        # Release the program
         self.program.release()
 
         self.dumpGLLogMessages("paintGL()")
 
     def resizeGL(self, width, height):
-        pass
+        scaleX = 1.0
+        scaleY = 1.0
+        scaleZ = 1.0 # Will always be 1.0 since we don't scale depth
+        scaleW = 1.0 # A global scale factor, also always 1.0
+
+        if width > height:
+            scaleX = height / width
+        else:
+            scaleY = width / height
+
+        self.currentScaling = QVector4D(scaleX, scaleY, scaleZ, scaleW)
+
+        # Redraw since we changed the value of the scaling uniform
+        self.update()
 
     def closeGL(self):
         # We need to explicitly destroy VAOs, VBOs and programs. Otherwise we'll get a 
         # segfault or another similar crash.
-        self.triangleVAO.destroy()
-        self.verticesBuffer.destroy()
+        self.triangleVAO1.destroy()
+        self.verticesBuffer1.destroy()
+        self.triangleVAO2.destroy()
+        self.verticesBuffer2.destroy()
         del self.program
 
 app = TestApplication(sys.argv, TestCanvas)
