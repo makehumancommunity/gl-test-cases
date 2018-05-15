@@ -67,7 +67,7 @@ class Wavefront():
         y = float(parts[2])
         z = float(parts[3])
         vertexNormal = [x,y,z]
-        print("VERTEXNORMAL: " + json.dumps(vertexNormal))
+        #print("VERTEXNORMAL: " + json.dumps(vertexNormal))
         self.vertexNormals.append(vertexNormal)
 
     def getVertexArray(self):
