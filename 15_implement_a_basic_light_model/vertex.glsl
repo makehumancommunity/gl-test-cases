@@ -63,9 +63,13 @@ void main() {
   float dotProduct = dot(normalizedRotatedNormal, normalizedLightDirection);
   float diffuseLightCoefficient = max(0.0, dotProduct);
 
-  vec3 colors = inputColor * diffuseLightCoefficient;
+  vec3 diffuseColors = inputColor * diffuseLightCoefficient;
+
+  vec3 ambientColors = inputColor * 0.3;
+
+  vec3 colors = diffuseColors + ambientColors;
   
-  vec4 modifiedColor = vec4(colors.r, colors.g, colors.b, 1.0);
+  vec4 modifiedColor = vec4(min(1.0, colors.r), min(1.0, colors.g), min(1.0, colors.b), 1.0);
 
   // Fetch the color information we got from the attribute (ie from 
   // python) and simply forward it to the fragment shader via the
