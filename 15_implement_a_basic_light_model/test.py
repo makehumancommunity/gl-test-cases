@@ -2,12 +2,14 @@
 
 """
 Use directional lighting and ambient lighting to implement
-a primitive lighting model
+a primitive lighting model. The model is loaded from a 
+wavefront obj that was created with Blender.
 """
 
 from genericgl import TestApplication
 from genericgl import RotatableCanvas
 from genericgl import info
+from genericgl import Wavefront
 
 import sys
 import array
@@ -19,6 +21,8 @@ from PyQt5.QtCore import *
 class TestCanvas(RotatableCanvas):
 
     def __init__(self):
+
+        self.suzanne = Wavefront("../objs/suzanne_triangulated.obj")
 
         with open("vertex.glsl","r") as f:
             self.vertexShaderSource = f.read()
@@ -61,21 +65,14 @@ class TestCanvas(RotatableCanvas):
         # Find the uniform location for controling the rotation of the object
         self.objectRotation = self.program.uniformLocation("objectRotation")
 
-        # Location and color for vertices. We specity vertices independently of
-        # faces, so it does not matter in which order they occur. 
-        self.vertices = array.array('f', [
-            -0.5, 0.0,-0.5,   -1.0, 1.0,-1.0, 
-             0.5, 0.0,-0.5,    1.0, 1.0,-1.0, 
-             0.5, 0.0, 0.5,    1.0, 1.0, 1.0, 
-            -0.5, 0.0, 0.5,   -1.0, 1.0, 1.0, 
-             0.0, 0.5, 0.0,    0.0, 1.0, 0.0 
-        ])
+        # This returns an array with order XYZ NNN
+        self.vertices = self.suzanne.getVertexAndNormalArray()
 
         # Buffer info returns a tuple where the second part is number of elements in the array
         self.verticesLength = self.vertices.buffer_info()[1]
 
         # Each vertex is specified with with six values (xyznnn)
-        self.arrayCellsPerVertex = 7
+        self.arrayCellsPerVertex = 6
 
         # Size in bytes for each vertex specification (self.vertices.itemsize is the size in bytes
         # of a single array cell)
@@ -86,27 +83,21 @@ class TestCanvas(RotatableCanvas):
         self.normalBytesOffset = self.vertices.itemsize * 3
 
         # How many bytes are there in between vertex location specifications
-        self.vertexStride = self.vertices.itemsize * 6  # (6 because XYZNNN)
+        self.vertexStride = self.vertices.itemsize * self.arrayCellsPerVertex
 
         # Total size in bytes for entire array
         self.verticesDataLength = self.verticesLength * self.vertices.itemsize
 
-        # Create an array with unsigned short values for specifying each face 
-        # of the pyramid
-        self.indices = array.array('H', [
-            0, 1, 4,        # Front face
-            1, 2, 4,        # Right face
-            2, 3, 4,        # Back face
-            3, 0, 4         # Left face
-        ])
+        # Array with vertex indices that make up faces
+        self.indices = self.suzanne.getFaceArray()
 
         # Number of vertices in the index array. 
         self.numberOfVertices = self.indices.buffer_info()[1]
 
         # Start specifying the Vertex Array Object (VAO). 
-        self.pyramidVAO = QOpenGLVertexArrayObject()
-        self.pyramidVAO.create()
-        self.pyramidVAO.bind()
+        self.suzanneVAO = QOpenGLVertexArrayObject()
+        self.suzanneVAO.create()
+        self.suzanneVAO.bind()
  
         # Create a VBO for holding vertex position info
         self.verticesBuffer = QOpenGLBuffer(QOpenGLBuffer.VertexBuffer)
@@ -122,14 +113,14 @@ class TestCanvas(RotatableCanvas):
         
         # Say that the inputNormal attribute should be read from the same array, that it should take three values at a 
         # time (the normal vector), and that they are of type GL_FLOAT. The same byte offset as for the position info is used, but
-        # we now also specify that the color information starts at normalBytesOffset bytes into each vertex specification
+        # we now also specify that the normal information starts at normalBytesOffset bytes into each vertex specification
         self.program.enableAttributeArray( self.program.attributeLocation("inputNormal") )
-        self.program.setAttributeBuffer( self.program.attributeLocation("inputNormal"), self.gl.GL_FLOAT, self.normalBytesOffset, 4, self.vertexStride )
+        self.program.setAttributeBuffer( self.program.attributeLocation("inputNormal"), self.gl.GL_FLOAT, self.normalBytesOffset, 3, self.vertexStride )
         
         # Once we have set up everything related to the VBOs, we can release that and the 
         # related VAO.
         self.verticesBuffer.release()
-        self.pyramidVAO.release()
+        self.suzanneVAO.release()
      
         # Release the program until we need to actually draw something. 
         self.program.release()
@@ -154,14 +145,14 @@ class TestCanvas(RotatableCanvas):
         self.program.setUniformValue(self.viewportScaling, self.currentScaling)
  
         # Activate the VAO
-        self.pyramidVAO.bind()
+        self.suzanneVAO.bind()
 
         # Draw the VAO. It will remember which VBO was specified for it. Note the use
         # of glDrawElements rather than glDrawArrays. 
         self.gl.glDrawElements(self.gl.GL_TRIANGLES, self.numberOfVertices, self.gl.GL_UNSIGNED_SHORT, self.indices)
 
         # Release the VAO
-        self.pyramidVAO.release()
+        self.suzanneVAO.release()
 
         # Release the program
         self.program.release()
@@ -171,8 +162,8 @@ class TestCanvas(RotatableCanvas):
     def resizeGL(self, width, height):
         scaleX = 1.0
         scaleY = 1.0
-        scaleZ = 1.0 # Will always be 1.0 since we don't scale depth
-        scaleW = 1.0 # A global scale factor, also always 1.0
+        scaleZ = 1.0 # Will always be 1.0 since we don't scale depth yet
+        scaleW = 1.6 # A global scale factor. Higher = smaller object on screen. 
 
         if width > height:
             scaleX = height / width
@@ -187,7 +178,7 @@ class TestCanvas(RotatableCanvas):
     def closeGL(self):
         # We need to explicitly destroy VAOs, VBOs and programs. Otherwise we'll get a 
         # segfault or another similar crash.
-        self.pyramidVAO.destroy()
+        self.suzanneVAO.destroy()
         self.verticesBuffer.destroy()
         del self.program
 

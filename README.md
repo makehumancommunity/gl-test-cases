@@ -29,7 +29,7 @@ For example:
 * 12 *Mouse rotation* - Draw a quad and implement mouse rotation to be able to rotate it. Since there is no perspective nor lighting yet, it might not look overly impressing. 
 * 13 *Draw two triangles using Qt's wrappers* - Use Qt's VAO and VBO wrappers to draw two separate triangles. 
 * 14 *Draw a cube using shared indices* - Use the glDrawElements call to draw a cube where vertices are shared between faces.
-* 15 *Implement a crappy light model* - Try to implement some kind of directional lighting. The math is probably way off. Also, it's aimed at smooth objects, which the used pyramid definitely isn't an example of. 
+* 15 *Implement a basic light model* - Try to implement some kind of directional lighting. Use this to light a 3D object loaded from wavefront obj (to get proper vertex normal specifications)
 
 ## Results
 
@@ -92,6 +92,10 @@ If you have run a test on your computer, please add information about a) what ha
 * Ubuntu 16.04 / anaconda python 3.6.5 / nvidia: Works
 
 ### 14 Draw a cube using shared indices
+
+* Ubuntu 16.04 / anaconda python 3.6.5 / nvidia: Works
+
+### 15 Implement a basic light model
 
 * Ubuntu 16.04 / anaconda python 3.6.5 / nvidia: Works
 
