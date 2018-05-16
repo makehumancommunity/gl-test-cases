@@ -6,10 +6,13 @@ to know if any operations whatsoever are allowed against the GL functions
 object. 
 """
 
+import sys
+import os.path
+sys.path.append('/'.join(os.path.dirname(os.path.abspath(__file__)).split('/')[:-1]))
+
 from genericgl import TestApplication
 from genericgl import Canvas
 
-import sys
 
 class TestCanvas(Canvas):
 

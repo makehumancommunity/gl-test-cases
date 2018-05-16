@@ -5,11 +5,14 @@ Use Qt's wrappers for Vertex Array Objects (VAO) and Vertex Buffer Objects (VBO)
 draw two triangles. 
 """
 
+import sys
+import os.path
+sys.path.append('/'.join(os.path.dirname(os.path.abspath(__file__)).split('/')[:-1]))
+
 from genericgl import TestApplication
 from genericgl import RotatableCanvas
 from genericgl import info
 
-import sys
 import array
 
 from PyQt5.QtGui import *

@@ -6,11 +6,14 @@ For reference: the coordinates, color and size of the dot are
 set in the shaders, not in the python source. 
 """
 
+import sys
+import os.path
+sys.path.append('/'.join(os.path.dirname(os.path.abspath(__file__)).split('/')[:-1]))
+
 from genericgl import TestApplication
 from genericgl import Canvas
 from genericgl import info
 
-import sys
 import array
 
 from PyQt5.QtGui import QOpenGLShaderProgram, QOpenGLShader

@@ -107,6 +107,7 @@ class _Face():
         return None
 
     def recalculateNormal(self):
+        pass
 
         # TODO: Calculate the face normal from vertex positions. The approach with 
         # using the indicated face normal will only work when using an unmodified

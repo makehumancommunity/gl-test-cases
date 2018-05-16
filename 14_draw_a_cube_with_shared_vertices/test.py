@@ -6,11 +6,14 @@ draw a multicolored cube with shared vertices for corners. Note that contrary to
 earlier experiments, we're using drawElements rather than drawArrays. 
 """
 
+import sys
+import os.path
+sys.path.append('/'.join(os.path.dirname(os.path.abspath(__file__)).split('/')[:-1]))
+
 from genericgl import TestApplication
 from genericgl import RotatableCanvas
 from genericgl import info
 
-import sys
 import array
 
 from PyQt5.QtGui import *

@@ -5,11 +5,14 @@ This test only displays a window with a black square, which is a generic
 QOpenGLWidget. GL functions have at this point not been initialized.
 """
 
+import sys
+import os.path
+sys.path.append('/'.join(os.path.dirname(os.path.abspath(__file__)).split('/')[:-1]))
+
 from PyQt5.QtWidgets import QApplication, QWidget, QOpenGLWidget, QVBoxLayout
 from PyQt5.QtGui import QOpenGLContext
 from PyQt5.QtCore import QT_VERSION_STR
 
-import sys
 
 class TestApplication(QApplication):
 

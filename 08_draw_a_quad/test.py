@@ -5,11 +5,14 @@ Try to draw a quad using vertex position data stored in an array rather
 than hardcoded in the shaders.
 """
 
+import sys
+import os.path
+sys.path.append('/'.join(os.path.dirname(os.path.abspath(__file__)).split('/')[:-1]))
+
 from genericgl import TestApplication
 from genericgl import Canvas
 from genericgl import info
 
-import sys
 import array
 
 from PyQt5.QtGui import QOpenGLShaderProgram, QOpenGLShader

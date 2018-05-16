@@ -5,10 +5,13 @@ This test only displays a window with a black square, which is an instance
 of the Canvas in genericgl. GL functions have at this point been initialized.
 """
 
+import sys
+import os.path
+sys.path.append('/'.join(os.path.dirname(os.path.abspath(__file__)).split('/')[:-1]))
+
 from genericgl import TestApplication
 from genericgl import Canvas
 
-import sys
 
 class TestCanvas(Canvas):
 

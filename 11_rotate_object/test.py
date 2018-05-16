@@ -5,11 +5,14 @@ This is largely the same example as 09, but we also scale to compensate
 for window size. Note the new "uniform" in the vertex shader.
 """
 
+import sys
+import os.path
+sys.path.append('/'.join(os.path.dirname(os.path.abspath(__file__)).split('/')[:-1]))
+
 from genericgl import TestApplication
 from genericgl import Canvas
 from genericgl import info
 
-import sys
 import array
 
 from PyQt5.QtGui import QOpenGLShaderProgram, QOpenGLShader, QVector4D, QVector3D

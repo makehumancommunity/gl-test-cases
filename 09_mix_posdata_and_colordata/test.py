@@ -5,11 +5,14 @@ Draw a multicolored quad with data about both vertex position (XYZ) and vertex
 color (RGBA) fetched from the same array. See also comments in the shader files. 
 """
 
+import sys
+import os.path
+sys.path.append('/'.join(os.path.dirname(os.path.abspath(__file__)).split('/')[:-1]))
+
 from genericgl import TestApplication
 from genericgl import Canvas
 from genericgl import info
 
-import sys
 import array
 
 from PyQt5.QtGui import QOpenGLShaderProgram, QOpenGLShader
