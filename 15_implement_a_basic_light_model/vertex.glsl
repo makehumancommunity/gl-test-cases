@@ -26,6 +26,9 @@ uniform vec3 objectRotation = vec3(0.0, 0.0, 0.0);
 // viewport. We give a default value of "no scaling" (all is 1.0).
 uniform vec4 viewportScaling = vec4(1.0, 1.0, 1.0, 1.0);
 
+// View normal. The default value is that it's frontal.
+uniform vec4 viewNormal = vec4(0.0, 0.0, -1.0, 1.0);
+
 void main() {
 
   vec3 angles = radians(objectRotation);
@@ -54,26 +57,40 @@ void main() {
   // Finally multiply it with scaling in order to compensate for window size.
   gl_Position = viewportScaling * rotatedCoordinates;
 
-  // I don't know what the hell I am doing, but it looks so-so as if it 
-  // takes light direction into account
+  // We also need to rotate normals
   vec4 rotatedNormal = rz * ry * rx * inputNormal;
+
+  // Normalization turns the vectors 1.0 long, in the same direction
   vec4 normalizedRotatedNormal = normalize(rotatedNormal);
   vec4 normalizedLightDirection = normalize(lampPosition);
 
+  // Calculate cos(angle) for the angle between the normal and the light direction
   float dotProduct = dot(normalizedRotatedNormal, normalizedLightDirection);
+
+  // the dotProduct can be negative, so clamp those values to 0
   float diffuseLightCoefficient = max(0.0, dotProduct);
 
+  // Calculate the diffuse light contribution to the overall color
   vec3 diffuseColors = inputColor * diffuseLightCoefficient;
 
-  vec3 ambientColors = inputColor * 0.3;
+  // Calculate an ambient contribution to the overall color
+  vec3 ambientColors = inputColor * 0.1;
 
-  vec3 colors = diffuseColors + ambientColors;
+  // Calculate reflected light normal
+  vec4 reflectionNormal = reflect(-normalizedLightDirection, normalizedRotatedNormal);
+
+  // Specular contribution. This model needs to be improved. 
+  float specularCos = max(0.0, dot(reflectionNormal, viewNormal));
+  float specularLightCoefficient = min(1.0, pow(specularCos,4.0)) * 0.7 - 0.2;
+  vec3 specularColors = inputColor * specularLightCoefficient;
+
+  // Add all light contributions together
+  vec3 colors = diffuseColors + ambientColors + specularColors;
   
+  // Convert to a vec4 and clamp values higher than 1.0. That should never happen, but doesn't hurt. 
   vec4 modifiedColor = vec4(min(1.0, colors.r), min(1.0, colors.g), min(1.0, colors.b), 1.0);
 
-  // Fetch the color information we got from the attribute (ie from 
-  // python) and simply forward it to the fragment shader via the
-  // "outputColor" connector we declared above
+  // Pass on the resulting color to the fragment shader
   outputColor = modifiedColor;
 }
 
