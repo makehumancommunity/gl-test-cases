@@ -22,7 +22,7 @@ class RotatableCanvas(Canvas):
         super(RotatableCanvas, self).__init__(parent,app,requestedGLVersion)
 
         self.xRot = 0
-        self.yRot = 0
+        self.yRot = 180 * 16;
         self.zRot = 0
 
         self.lastPos = QPoint()
