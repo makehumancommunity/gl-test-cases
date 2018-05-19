@@ -23,7 +23,9 @@ class Canvas(QOpenGLWidget):
 
     def _on_destroyed(self, *args):
         info("CANVAS","about to be destroyed")
+        self.makeCurrent()
         self.closeGL()
+        self.doneCurrent()
 
     # Override if necessary
     def minimumSizeHint(self):
