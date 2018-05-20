@@ -4,6 +4,7 @@
 import os
 import json
 import array
+import math
 
 class _Vertex():
 
@@ -61,6 +62,19 @@ class _Normal():
     def __str__(self):
         return "{NORMAL: " + str(round(self.x,4)) + " " + str(round(self.y,4)) + " " + str(round(self.z,4)) + "}"
 
+    def getUnitVector(self):
+        '''This returns a normal (vector from 0/0/0 to x/y/z) with exactly the length 1.0'''
+        magnitude = math.sqrt(self.x*self.x + self.y*self.y + self.z*self.z)
+
+        normalizedX = self.x / magnitude
+        normalizedY = self.y / magnitude
+        normalizedZ = self.z / magnitude
+
+        normalizedNormal = _Normal(self.index, normalizedX, normalizedY, normalizedZ)
+
+        return normalizedNormal
+
+
 class _Face():
 
     def __init__(self, faceIndex, vert1, vert2, vert3, normal1, normal2, normal3):
@@ -76,6 +90,7 @@ class _Face():
         self.normal3 = normal3
 
         self.indicatedAverageNormal = None
+        self.calculatedNormal = None
 
         if (not normal1 is None) and (not normal2 is None) and (not normal3 is None):
 
@@ -84,6 +99,7 @@ class _Face():
             z = (normal1.z + normal2.z + normal3.z) / 3
 
             self.indicatedAverageNormal = _Normal(-1, x, y, z)
+            self.recalculateNormal()
 
         self.vertex1.addFace(self)
         self.vertex2.addFace(self)
@@ -91,7 +107,12 @@ class _Face():
 
     def getFaceNormal(self):
 
-        return self.indicatedAverageNormal
+        if self.calculatedNormal is None:
+            if self.indicatedAverageNormal is None:
+                raise ValueError("No normal is available")
+            else:
+                return self.indicatedAverageNormal        
+        return self.calculatedNormal
 
     def getNormalByVert(self, vertex):
 
@@ -107,12 +128,21 @@ class _Face():
         return None
 
     def recalculateNormal(self):
-        pass
 
-        # TODO: Calculate the face normal from vertex positions. The approach with 
-        # using the indicated face normal will only work when using an unmodified
-        # wavefront obj loaded from a file that had normals specified, which 
-        # isn't required.
+        x1 = self.vertex2.x - self.vertex1.x
+        y1 = self.vertex2.y - self.vertex1.y
+        z1 = self.vertex2.z - self.vertex1.z
+
+        x2 = self.vertex3.x - self.vertex1.x
+        y2 = self.vertex3.y - self.vertex1.y
+        z2 = self.vertex3.z - self.vertex1.z
+
+        x3 = y1*z2 - z1*y2
+        y3 = z1*x2 - x1*z2
+        z3 = x1*y2 - y1*x2
+
+        newNormal = _Normal(-1, x3, y3, z3)
+        self.calculatedNormal = newNormal.getUnitVector()
 
 
 class Wavefront():
@@ -289,3 +319,9 @@ class Wavefront():
             for face in vertex.faces:
 
                 print("  " + str(face.indicatedAverageNormal) )
+
+    def recalculateFaceNormals(self):
+
+        for face in self.faces:
+            face.recalculateNormal()
+
