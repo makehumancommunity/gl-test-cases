@@ -29,6 +29,12 @@ uniform vec4 viewportScaling = vec4(1.0, 1.0, 1.0, 1.0);
 // View normal. The default value is that it's frontal.
 uniform vec4 viewNormal = vec4(0.0, 0.0, -1.0, 1.0);
 
+// for forwarding to fragment shader
+varying vec4 outViewNormal;
+varying vec4 outVertexNormal;
+varying vec4 outLightDirection;
+
+
 void main() {
 
   vec3 angles = radians(objectRotation);
@@ -74,23 +80,19 @@ void main() {
   vec3 diffuseColors = inputColor * diffuseLightCoefficient;
 
   // Calculate an ambient contribution to the overall color
-  vec3 ambientColors = inputColor * 0.1;
-
-  // Calculate reflected light normal
-  vec4 reflectionNormal = reflect(-normalizedLightDirection, normalizedRotatedNormal);
-
-  // Specular contribution. This model needs to be improved. 
-  float specularCos = max(0.0, dot(reflectionNormal, viewNormal));
-  float specularLightCoefficient = min(1.0, pow(specularCos,4.0)) * 0.7 - 0.2;
-  vec3 specularColors = inputColor * specularLightCoefficient;
+  vec3 ambientColors = inputColor * 0.2;
 
   // Add all light contributions together
-  vec3 colors = diffuseColors + ambientColors + specularColors;
+  vec3 colors = diffuseColors + ambientColors;
   
   // Convert to a vec4 and clamp values higher than 1.0. That should never happen, but doesn't hurt. 
   vec4 modifiedColor = vec4(min(1.0, colors.r), min(1.0, colors.g), min(1.0, colors.b), 1.0);
 
   // Pass on the resulting color to the fragment shader
   outputColor = modifiedColor;
+
+  outViewNormal = viewNormal;
+  outVertexNormal = normalizedRotatedNormal;
+  outLightDirection = normalizedLightDirection;
 }
 
