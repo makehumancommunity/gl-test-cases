@@ -91,6 +91,7 @@ void main() {
   // Pass on the resulting color to the fragment shader
   outputColor = modifiedColor;
 
+  // Pass some variables explicitly to the fragment shader
   outViewNormal = viewNormal;
   outVertexNormal = normalizedRotatedNormal;
   outLightDirection = normalizedLightDirection;
