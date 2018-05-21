@@ -3,160 +3,27 @@
 
 import os
 import json
-import array
 import math
-
-class _Vertex():
-
-    def __init__(self, vertexIndex, x, y, z):
-
-        self.index = vertexIndex 
-
-        self.x = float(x)
-        self.y = float(y)
-        self.z = float(z)
-
-        self.faces = [];
-
-        self.calculatedNormal = None
-
-    def recalculateNormal(self):
-        normals = []
-
-        x = 0.0
-        y = 0.0
-        z = 0.0
-        num = 0
-
-        for face in self.faces:
-            normal = face.getNormalByVert(self)
-            if not normal is None:
-                x = x + normal.x
-                y = y + normal.y
-                z = z + normal.z
-                num = num + 1
-
-        if num is None:
-            raise ValueError("Normal is None")
-
-        self.calculatedNormal = _Normal(-1, x / num, y / num, z / num)
-        return self.calculatedNormal
-
-    def addFace(self, face):
-        self.faces.append(face)
-
-    def __str__(self):
-        return "{VERTEX: " + str(round(self.x,4)) + " " + str(round(self.y,4)) + " " + str(round(self.z,4)) + "}"
-
-
-class _Normal():
-
-    def __init__(self, normalIndex, x, y, z):
-
-        self.index = normalIndex
-
-        self.x = float(x)
-        self.y = float(y)
-        self.z = float(z)
-
-    def __str__(self):
-        return "{NORMAL: " + str(round(self.x,4)) + " " + str(round(self.y,4)) + " " + str(round(self.z,4)) + "}"
-
-    def getUnitVector(self):
-        '''This returns a normal (vector from 0/0/0 to x/y/z) with exactly the length 1.0'''
-        magnitude = math.sqrt(self.x*self.x + self.y*self.y + self.z*self.z)
-
-        normalizedX = self.x / magnitude
-        normalizedY = self.y / magnitude
-        normalizedZ = self.z / magnitude
-
-        normalizedNormal = _Normal(self.index, normalizedX, normalizedY, normalizedZ)
-
-        return normalizedNormal
-
-
-class _Face():
-
-    def __init__(self, faceIndex, vert1, vert2, vert3, normal1, normal2, normal3):
-
-        self.index = faceIndex
-
-        self.vertex1 = vert1
-        self.vertex2 = vert2
-        self.vertex3 = vert3
-
-        self.normal1 = normal1
-        self.normal2 = normal2
-        self.normal3 = normal3
-
-        self.indicatedAverageNormal = None
-        self.calculatedNormal = None
-
-        if (not normal1 is None) and (not normal2 is None) and (not normal3 is None):
-
-            x = (normal1.x + normal2.x + normal3.x) / 3
-            y = (normal1.y + normal2.y + normal3.y) / 3
-            z = (normal1.z + normal2.z + normal3.z) / 3
-
-            self.indicatedAverageNormal = _Normal(-1, x, y, z)
-            self.recalculateNormal()
-
-        self.vertex1.addFace(self)
-        self.vertex2.addFace(self)
-        self.vertex3.addFace(self)
-
-    def getFaceNormal(self):
-
-        if self.calculatedNormal is None:
-            if self.indicatedAverageNormal is None:
-                raise ValueError("No normal is available")
-            else:
-                return self.indicatedAverageNormal        
-        return self.calculatedNormal
-
-    def getNormalByVert(self, vertex):
-
-        if vertex == self.vertex1:
-            return self.normal1
-
-        if vertex == self.vertex2:
-            return self.normal2
-
-        if vertex == self.vertex3:
-            return self.normal3
-
-        return None
-
-    def recalculateNormal(self):
-
-        x1 = self.vertex2.x - self.vertex1.x
-        y1 = self.vertex2.y - self.vertex1.y
-        z1 = self.vertex2.z - self.vertex1.z
-
-        x2 = self.vertex3.x - self.vertex1.x
-        y2 = self.vertex3.y - self.vertex1.y
-        z2 = self.vertex3.z - self.vertex1.z
-
-        x3 = y1*z2 - z1*y2
-        y3 = z1*x2 - x1*z2
-        z3 = x1*y2 - y1*x2
-
-        newNormal = _Normal(-1, x3, y3, z3)
-        self.calculatedNormal = newNormal.getUnitVector()
-
+import numpy
 
 class Wavefront():
 
     def __init__(self, path):
 
-        self.vertices = []
-        self.faces = []        
-        self.normals = []
+        # These are the arrays we're going to produce, and which might 
+        # make sense to manipulate from the outside:
 
-        self._vertexAndNormalArray = None
-        self._faceArray = None
-        self._detachedTris = None
-        
+        self.vertexCoords = None  # XYZ coordinated for each vertex
+        self.vertexNormals = None # Normal (in XYZ form) for each vertex
+        self.faces = None         # Faces, specified by listing indexes for participating vertices
+
+        # These are internal work arrays
+
+        self._rawVertices = []
+        self._rawFaces = []        
+        self._vertexBelongsToFaces = None
+        self._faceVertCache = None
+
         if not os.path.exists(path):
             raise IOError(path + " does not exist")
 
@@ -165,163 +32,251 @@ class Wavefront():
         with open(path,'r') as file:
             self.content = file.readlines()
 
-        # Make a first sweep for vertices and normals, as faces need that information
-
-        vertexIndex = 0
-        normalIndex = 0
-
-        for line in self.content:
-
-            strippedLine = line.strip()
-
-            if not strippedLine is None and not strippedLine == "" and not strippedLine[0] == "#":
-                parts = strippedLine.split(' ')
-                if len(parts) > 1:
-                    command = parts[0]
-
-                    if command == "v":
-                        self._parse_vertex(vertexIndex, parts)
-                        vertexIndex = vertexIndex + 1
-
-                    if command == "vn":
-                        self._parse_normals(normalIndex, parts)
-                        normalIndex = normalIndex + 1
+        # Make a first sweep for vertices as faces need that information
+        self._extractVertices()
 
         # Make a second sweep for faces
+        self._extractFaces()
 
-        faceIndex = 0;
+        # TODO: Find texture coordinates for vertices
 
+        # create numpy arrays to contain vertices, faces and normals
+        self._createVerticesNumpyArray()
+        self._createFacesNumpyArray()
+
+        # These two operations need to be redone if vertex coordinates
+        # are changed
+        self.recalculateFaceNormals()
+        self.recalculateVertexNormals()
+
+
+    def _extractVertices(self):
         for line in self.content:
-
             strippedLine = line.strip()
-
             if not strippedLine is None and not strippedLine == "" and not strippedLine[0] == "#":
                 parts = strippedLine.split(' ')
                 if len(parts) > 1:
                     command = parts[0]
+                    if command == "v":
+                        x = float(parts[1])
+                        y = float(parts[2])
+                        z = float(parts[3])
+                        vertex = [x, y, z]
+                        self._rawVertices.append(vertex)
 
+
+    def _extractFaces(self, assumeQuads = False):
+
+        # Note that wavefront lists starts at 1, not 0
+
+        for line in self.content:
+            strippedLine = line.strip()
+            if not strippedLine is None and not strippedLine == "" and not strippedLine[0] == "#":
+                parts = strippedLine.split(' ')
+                if len(parts) > 1:
+                    command = parts[0]
                     if command == "f":
-                        self._parse_face(faceIndex, parts)
-                        faceIndex = faceIndex + 1
 
-        for vertex in self.vertices:
-            vertex.recalculateNormal()
+                        # Face info is vertIdx / texCoIdx / faceNormalIdx  OR  vertIdx / texCoIdx  OR  vertIdx
+
+                        vInfo1 = parts[1].split('/')
+                        vInfo2 = parts[2].split('/')
+                        vInfo3 = parts[3].split('/')
+
+                        vInfo4 = None
+                        if assumeQuads:
+                            vInfo4 = parts[4].split('/')
+                
+                        # Find indexes of vertices making up the face. Note "-1" since wavefront indexes start
+                        # at 1 rather than 0
+                        vidx1 = int(vInfo1[0]) - 1
+                        vidx2 = int(vInfo2[0]) - 1
+                        vidx3 = int(vInfo3[0]) - 1
+
+                        vidx4 = -1
+                        if assumeQuads:
+                            vidx4 = int(vInfo4[0]) - 1
+
+                        # TODO: Extract texture coordinates
+
+                        if assumeQuads:
+                            face = [vidx1, vidx2, vidx3, vidx4]
+                        else:
+                            face = [vidx1, vidx2, vidx3]
+
+                        self._rawFaces.append(face)
 
 
-    def _parse_vertex(self, vertexIndex, parts):
-        x = float(parts[1])
-        y = float(parts[2])
-        z = float(parts[3])
-        vertex = _Vertex(vertexIndex, x, y, z)
-        self.vertices.append(vertex)
+    def _createFacesNumpyArray(self, assumeQuads = False):
 
-    def _parse_normals(self, normalIndex, parts):
-        x = float(parts[1])
-        y = float(parts[2])
-        z = float(parts[3])
-        normal = _Normal(normalIndex, x, y, z)
-        self.normals.append(normal)
+        numberOfFaces = len(self._rawFaces)
 
-    def _parse_face(self, faceIndex, parts):
+        vertsPerFace = 3
+        if assumeQuads:
+            vertsPerFace = 4
 
-        # Wavefront lists starts at 1, not 0
+        # Create a two-dimensional int array with shape (numFace/vertsPerFace) and 
+        # fill it values from the wavefront obj. This will contain vert indices.
 
-        vInfo1 = parts[1].split('/')
-        vInfo2 = parts[2].split('/')
-        vInfo3 = parts[3].split('/')
+        self.faces = numpy.array( self._rawFaces, dtype=int ) # Values will be copied from self._rawFaces
 
-        vidx1 = int(vInfo1[0]) - 1
-        vidx2 = int(vInfo2[0]) - 1
-        vidx3 = int(vInfo3[0]) - 1
+        # Create a two-dimensional float array with shape (numFace/ 3 ) and 
+        # fill it with zeros. This will contain faces normals, but needs to
+        # be recalculated.
 
-        vertex1 = self.vertices[vidx1]
-        vertex2 = self.vertices[vidx2]
-        vertex3 = self.vertices[vidx3]
+        self.faceNormals = numpy.zeros( (numberOfFaces, 3), dtype=float )
 
-        tidx1 = None
-        tidx2 = None
-        tidx3 = None
 
-        nidx1 = None
-        nidx2 = None
-        nidx3 = None
+    def _createVerticesNumpyArray(self):
 
-        normal1 = None
-        normal2 = None
-        normal3 = None
+        numberOfVertices = len(self._rawVertices)
+
+        # Convert raw coords from wavefront into a 2d numpy array
+        self.vertexCoords = numpy.array( self._rawVertices, dtype=float )
+
+        # Create a two-dimensional float array with shape (numVerts/3) and 
+        # fill it with zeros. This will contain vertex normals.
+        self.vertexNormals = numpy.zeros( (numberOfVertices, 3), dtype=float )
+
+        # Create a two-dimensional float array with shape (numVerts/2) and 
+        # fill it with zeros. This will contain vertex texture coordinates.
+        self.vertexTexCo = numpy.zeros( (numberOfVertices, 2), dtype=float )
+
+
+    def recalculateVertexNormals(self, assumeQuads = False):
+
+        # Build a cache where we, per vertex, list which faces are relevant
+        # for it. We need this in order to calculate the vertex normal later,
+        # as an average of the face normals surrounding it
+        if self._vertexBelongsToFaces is None:
+
+            self._vertexBelongsToFaces = []
+
+            numberOfFaces = len(self.faces)
+            numberOfVertices = len(self.vertexCoords)
+
+            vertsPerFace = 3
+            if assumeQuads:
+                vertsPerFace = 4
+
+            currentVert = 0
+            while currentVert < numberOfVertices:
+                self._vertexBelongsToFaces.append([])
+                currentVert = currentVert + 1 
+
+            currentFace = 0
+            while currentFace < numberOfFaces:
+                fv = self.faces[currentFace]
+                currentVert = 0
+                while currentVert < vertsPerFace:
+                    vertexIndex = fv[currentVert]
+                    self._vertexBelongsToFaces[vertexIndex].append(currentFace)
+                    currentVert = currentVert + 1
+                currentFace = currentFace + 1
         
-        # Extract normals from information, if at all set
+        # Calculate vertex normals as an average of the surrounding face
+        # normals. 
+        currentVert = 0
+        while currentVert < numberOfVertices:
+            faces = self._vertexBelongsToFaces[currentVert]
+            numberOfFaces = len(faces)
+            currentNormal = numpy.array([0,0,0], dtype=float)
+            currentFace = 0
+            while currentFace < numberOfFaces:
+                fidx = faces[currentFace]
+                fnormal = self.faceNormals[fidx]
+                currentNormal = currentNormal + fnormal
+                currentFace = currentFace + 1
+            self.vertexNormals[currentVert] = self._unitVector(currentNormal / numberOfFaces)
 
-        if len(vInfo1) > 2:
-            nidx1 = int(vInfo1[2]) - 1
-            normal1 = self.normals[nidx1]
+            currentVert = currentVert + 1
 
-        if len(vInfo2) > 2:
-            nidx2 = int(vInfo2[2]) - 1
-            normal2 = self.normals[nidx2]
-
-        if len(vInfo3) > 2:
-            nidx3 = int(vInfo3[2]) - 1
-            normal3 = self.normals[nidx3]
-
-        face = _Face(faceIndex, vertex1, vertex2, vertex3, normal1, normal2, normal3)
-        self.faces.append(face)
-
-    def getVertexArray(self):
-        return None
-
-    def getVertexAndNormalArray(self):
-
-        if self._vertexAndNormalArray is not None:
-            return self._vertexAndNormalArray
-
-        data = []
-
-        l = len(self.vertices)
-        i = 0        
-
-        while i < l:
-            vertex = self.vertices[i]
-            normal = vertex.calculatedNormal
-
-            data.append(vertex.x)
-            data.append(vertex.y)
-            data.append(vertex.z)
-            data.append(normal.x)
-            data.append(normal.y)
-            data.append(normal.z)
-            i = i + 1
-
-        self._vertexAndNormalArray = array.array('f',data)
-        return self._vertexAndNormalArray
-
-    def getFaceArray(self):
-
-        if self._faceArray is not None:
-            return self._faceArray
-
-        data = []
-
-        for f in self.faces:
-            data.append(f.vertex1.index)
-            data.append(f.vertex2.index)
-            data.append(f.vertex3.index)
-
-        self._faceArray = array.array('H',data)
-        return self._faceArray
-
-    def debugVertices(self):
-
-        for vertex in self.vertices:
-
-            print(str(vertex) + " " + str(vertex.calculatedNormal))
-
-            for face in vertex.faces:
-
-                print("  " + str(face.indicatedAverageNormal) )
 
     def recalculateFaceNormals(self):
 
-        for face in self.faces:
-            face.recalculateNormal()
+        self._copyVertCoordsToCache()
+
+        # Calculate the face normal from the first three vertices. This might produce 
+        # strange results if using quads. In that case we should probably triangulate and
+        # and weight together the face normals of the resulting two tris. 
+        numberOfFaces = len(self.faces)
+
+        currentFace = 0
+        while currentFace < numberOfFaces:
+
+            U = self._faceVertCache[currentFace][1] - self._faceVertCache[currentFace][0]
+            V = self._faceVertCache[currentFace][2] - self._faceVertCache[currentFace][0]
+            N = self._unitVector(numpy.cross(U,V))
+            self.faceNormals[currentFace] = N
+            currentFace = currentFace + 1
+
+
+    def _unitVector(self, normal):
+
+        # There is probably a numpy version of doing this calculation 
+
+        x = normal[0] * normal[0]
+        y = normal[1] * normal[1]
+        z = normal[2] * normal[2]
+
+        magnitude = math.sqrt(x + y + z)
+
+        return normal / magnitude
+
+
+    def _copyVertCoordsToCache(self, assumeQuads = False):
+
+        # Create a two-dimensional float array with shape ( numFace / vertsPerFace / 3 ) and 
+        # fill it with the coordinates for each vertex participating  in each face
+        #
+        # This cache is used when recalculating face normals
+
+        numberOfFaces = len(self.faces)
+
+        vertsPerFace = 3
+        if assumeQuads:
+            vertsPerFace = 4
+
+        if self._faceVertCache is None:
+            self._faceVertCache = numpy.zeros( (numberOfFaces, vertsPerFace, 3), dtype=float )
+
+        currentFace = 0
+        while currentFace < numberOfFaces:
+            currentVertex = 0
+            while currentVertex < vertsPerFace:
+                vertexIndex = self.faces[currentFace][currentVertex]
+                self._faceVertCache[currentFace][currentVertex] = self.vertexCoords[vertexIndex]
+                currentVertex = currentVertex + 1
+            currentFace = currentFace + 1
+
+
+    def getVertexArray(self):
+        return self.vertexCoords
+
+
+    def getVertexNormals(self):
+        return self.vertexNormals
+
+
+    def getVertexAndNormalArray(self):
+        # This should possibly be cached
+        return numpy.hstack( (self.vertexCoords, self.vertexNormals) )
+
+
+    def getFaceArray(self):
+        return self.faces
+
+
+    def debugVertices(self):
+
+        vertices = self.getVertexAndNormalArray()
+
+        for vertex in vertices:
+            out = "["
+            for i in vertex:
+                out = out + " " + str(round(i,4))
+            out = out + " ]"
+            print(out)
+
+
 

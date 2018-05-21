@@ -16,6 +16,7 @@ from genericgl import info
 from genericgl import Wavefront
 
 import array
+import json
 
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -68,11 +69,14 @@ class TestCanvas(RotatableCanvas):
         # Find the uniform location for controling the rotation of the object
         self.objectRotation = self.program.uniformLocation("objectRotation")
 
-        # This returns an array with order XYZ NNN
-        self.vertices = self.suzanne.getVertexAndNormalArray()
+        # This returns a numpy array with the shape [ [XYZNNN] [XYZNNN] ... ]
+        self.vertices2d = self.suzanne.getVertexAndNormalArray()
 
-        # Buffer info returns a tuple where the second part is number of elements in the array
-        self.verticesLength = self.vertices.buffer_info()[1]
+        # ... so we need to flatten it to an 1d array
+        self.vertices = self.suzanne.getVertexAndNormalArray().flatten()
+
+        # Number of elements in the flattened array
+        self.verticesLength = self.vertices.size
 
         # Each vertex is specified with with six values (xyznnn)
         self.arrayCellsPerVertex = 6
@@ -88,21 +92,35 @@ class TestCanvas(RotatableCanvas):
         # How many bytes are there in between vertex location specifications
         self.vertexStride = self.vertices.itemsize * self.arrayCellsPerVertex
 
+        # What GL datatype should we tell the buffer that we're using? This is necessary, since it
+        # might be different on 32-bit and 64-bit machines
+
+        self.glDataType = None # let it crash if it isn't float or double
+
+        if self.vertices.itemsize == 4:
+            self.glDataType = self.gl.GL_FLOAT
+
+        if self.vertices.itemsize == 8:
+            self.glDataType = self.gl.GL_DOUBLE
+
         # Total size in bytes for entire array
-        self.verticesDataLength = self.verticesLength * self.vertices.itemsize
+        self.verticesDataLength = self.vertices.nbytes
 
-        # Array with vertex indices that make up faces
-        self.indices = self.suzanne.getFaceArray()
+        # 2d Array with vertex indices that make up faces
+        self.indices2d = self.suzanne.getFaceArray()
+        
+        # Flattened version suitable for drawElements
+        self.indices = self.indices2d.flatten().tolist()
 
-        # Number of vertices in the index array. 
-        self.numberOfVertices = self.indices.buffer_info()[1]
+        # Number of elements in the index array. 
+        self.numberOfVertices = self.indices2d.size
 
         # Start specifying the Vertex Array Object (VAO). 
         self.suzanneVAO = QOpenGLVertexArrayObject()
         self.suzanneVAO.create()
         self.suzanneVAO.bind()
  
-        # Create a VBO for holding vertex position info
+        # Create a VBO for holding vertex info (both positions and normals)
         self.verticesBuffer = QOpenGLBuffer(QOpenGLBuffer.VertexBuffer)
         self.verticesBuffer.create()
         self.verticesBuffer.bind()
@@ -112,13 +130,13 @@ class TestCanvas(RotatableCanvas):
         # Here we specify that there is a program attribute that should get data that is sent
         # to it (by glDraw* operations), and in what form the data will arrive. 
         self.program.enableAttributeArray( self.program.attributeLocation("somePosition") )
-        self.program.setAttributeBuffer( self.program.attributeLocation("somePosition"), self.gl.GL_FLOAT, 0, 3, self.vertexStride )
+        self.program.setAttributeBuffer( self.program.attributeLocation("somePosition"), self.glDataType, 0, 3, self.vertexStride )
         
         # Say that the inputNormal attribute should be read from the same array, that it should take three values at a 
         # time (the normal vector), and that they are of type GL_FLOAT. The same byte offset as for the position info is used, but
         # we now also specify that the normal information starts at normalBytesOffset bytes into each vertex specification
         self.program.enableAttributeArray( self.program.attributeLocation("inputNormal") )
-        self.program.setAttributeBuffer( self.program.attributeLocation("inputNormal"), self.gl.GL_FLOAT, self.normalBytesOffset, 3, self.vertexStride )
+        self.program.setAttributeBuffer( self.program.attributeLocation("inputNormal"), self.glDataType, self.normalBytesOffset, 3, self.vertexStride )
         
         # Once we have set up everything related to the VBOs, we can release that and the 
         # related VAO.
