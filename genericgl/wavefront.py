@@ -8,7 +8,7 @@ import numpy
 
 class Wavefront():
 
-    def __init__(self, path):
+    def __init__(self, path, triangulateQuads = True):
 
         # These are the arrays we're going to produce, and which might 
         # make sense to manipulate from the outside:
@@ -24,6 +24,8 @@ class Wavefront():
         self._vertexBelongsToFaces = None
         self._faceVertCache = None
 
+        self.triangulateQuads = triangulateQuads
+
         if not os.path.exists(path):
             raise IOError(path + " does not exist")
 
@@ -32,7 +34,17 @@ class Wavefront():
         with open(path,'r') as file:
             self.content = file.readlines()
 
-        # Make a first sweep for vertices as faces need that information
+        # self._mode can be:
+        #   ONLYTRIS:    The incoming mesh only contains tris (so no need to do anything)
+        #   TRIANGULATE: The incoming mesh contains quads (and may contain tris). Triangulate to get only tris.
+        #   ONLYQUADS:   The incoming mesh contains only quads. Keep these rather than triangulating
+
+        self._mode = None
+
+        # Check if mesh contains quads and/or tris
+        self._scanForMode()
+
+        # Make a sweep for vertices as faces need that information
         self._extractVertices()
 
         # Make a second sweep for faces
@@ -49,6 +61,44 @@ class Wavefront():
         self.recalculateFaceNormals()
         self.recalculateVertexNormals()
 
+    def _scanForMode(self):
+
+        containsTris = False
+        containsQuads = False
+
+        for line in self.content:
+            strippedLine = line.strip()
+            if not strippedLine is None and not strippedLine == "" and not strippedLine[0] == "#":
+                parts = strippedLine.split(' ')
+                if len(parts) > 4:
+                    containsQuads = True
+                if len(parts) == 4:
+                    containsTris = True
+                if len(parts) > 5:
+                    raise ValueError("Found a face with more than four vertices. N-gons are not supported.")
+                # TODO: Check for n-gons?
+
+        if containsQuads:
+            if self.triangulateQuads:
+                self._mode = "TRIANGULATE"
+            else:
+                if containsTris:
+                    raise ValueError("Since the mesh contains both tris and quads, requesting the mesh to not be triangulated is illegal")
+                else:
+                    self._mode = "ONLYQUADS"
+        else:
+            if containsTris:
+                self._mode = "ONLYTRIS"
+            else:
+                raise ValueError("The mesh didn't contain tris nor quads!?")
+
+        if self._mode == "ONLYQUADS":
+            raise ValueError("The ONLYQUADS mode is not implemented yet")
+
+        print("Tris " + str(containsTris))
+        print("Quads " + str(containsQuads))
+        print(self._mode)
+    
 
     def _extractVertices(self):
         for line in self.content:
@@ -65,7 +115,22 @@ class Wavefront():
                         self._rawVertices.append(vertex)
 
 
-    def _extractFaces(self, assumeQuads = False):
+    def _distanceBetweenVerticesByIdx(self, idx1, idx2):
+
+        vert1 = numpy.array(self._rawVertices[idx1])
+        vert2 = numpy.array(self._rawVertices[idx2])    
+
+        difference = vert2 - vert1
+
+        x = difference[0]
+        y = difference[1]
+        z = difference[2]
+
+        distance = math.sqrt( x*x + y*y + z*z )
+        return distance
+
+
+    def _extractFaces(self):
 
         # Note that wavefront lists starts at 1, not 0
 
@@ -83,28 +148,39 @@ class Wavefront():
                         vInfo2 = parts[2].split('/')
                         vInfo3 = parts[3].split('/')
 
-                        vInfo4 = None
-                        if assumeQuads:
-                            vInfo4 = parts[4].split('/')
-                
                         # Find indexes of vertices making up the face. Note "-1" since wavefront indexes start
                         # at 1 rather than 0
                         vidx1 = int(vInfo1[0]) - 1
                         vidx2 = int(vInfo2[0]) - 1
                         vidx3 = int(vInfo3[0]) - 1
 
-                        vidx4 = -1
-                        if assumeQuads:
-                            vidx4 = int(vInfo4[0]) - 1
-
-                        # TODO: Extract texture coordinates
-
-                        if assumeQuads:
-                            face = [vidx1, vidx2, vidx3, vidx4]
-                        else:
+                        if len(parts) == 4:
+                            if self._mode == "ONLYQUADS":
+                                raise ValueError("Found tri although mode was ONLYQUADS")
                             face = [vidx1, vidx2, vidx3]
+                            self._rawFaces.append(face)
+                        else:
+                            vInfo4 = parts[4].split('/')
+                            vidx4 = int(vInfo4[0]) - 1
+                            if self._mode == "ONLYTRIS":
+                                raise ValueError("Found quad although mode was ONLYTRIS")
+                            if self._mode == "ONLYQUADS":
+                                raise ValueError("ONLYQUADS mode not implemented yet")
 
-                        self._rawFaces.append(face)
+                            # Perform triangulation by splitting quad into two tris, using the shortest diagonal
+                            distance13 = self._distanceBetweenVerticesByIdx(vidx1, vidx3)
+                            distance24 = self._distanceBetweenVerticesByIdx(vidx2, vidx4)
+
+                            if distance13 > distance24:
+                                face = [vidx1, vidx2, vidx4]
+                                self._rawFaces.append(face)
+                                face = [vidx3, vidx4, vidx2]
+                                self._rawFaces.append(face)
+                            else:
+                                face = [vidx1, vidx3, vidx4]
+                                self._rawFaces.append(face)
+                                face = [vidx2, vidx3, vidx1]
+                                self._rawFaces.append(face)
 
 
     def _createFacesNumpyArray(self, assumeQuads = False):
@@ -177,17 +253,32 @@ class Wavefront():
         # Calculate vertex normals as an average of the surrounding face
         # normals. 
         currentVert = 0
+
+        zeroNormal = numpy.array([0.0, 0.0, 0.0], dtype=float)
+
         while currentVert < numberOfVertices:
             faces = self._vertexBelongsToFaces[currentVert]
             numberOfFaces = len(faces)
             currentNormal = numpy.array([0,0,0], dtype=float)
             currentFace = 0
+            firstNormal = None
             while currentFace < numberOfFaces:
                 fidx = faces[currentFace]
                 fnormal = self.faceNormals[fidx]
+                if firstNormal is None:
+                    firstNormal = fnormal
                 currentNormal = currentNormal + fnormal
                 currentFace = currentFace + 1
-            self.vertexNormals[currentVert] = self._unitVector(currentNormal / numberOfFaces)
+            if numberOfFaces < 1:
+                raise ValueError("Found a vertex (" + str(currentVert) + ") which did not belong to any face")
+
+            averageNormal = currentNormal / numberOfFaces
+
+            if numpy.array_equal(averageNormal, zeroNormal):
+                print("WARNING: found zero vertex normal for vertex " + str(currentVert))
+                averageNormal = firstNormal
+
+            self.vertexNormals[currentVert] = self._unitVector(averageNormal)
 
             currentVert = currentVert + 1
 
@@ -206,7 +297,10 @@ class Wavefront():
 
             U = self._faceVertCache[currentFace][1] - self._faceVertCache[currentFace][0]
             V = self._faceVertCache[currentFace][2] - self._faceVertCache[currentFace][0]
-            N = self._unitVector(numpy.cross(U,V))
+
+            cross = numpy.cross(U,V)
+            N = self._unitVector(cross)
+
             self.faceNormals[currentFace] = N
             currentFace = currentFace + 1
 
@@ -220,6 +314,12 @@ class Wavefront():
         z = normal[2] * normal[2]
 
         magnitude = math.sqrt(x + y + z)
+
+        if magnitude == 0.0:
+            print("\nINVALID MAGNITUDE:\n")
+            print("Normal was: " + str(normal))
+            raise ValueError("Invalid magnitude")
+            sys.exit(1)
 
         return normal / magnitude
 
