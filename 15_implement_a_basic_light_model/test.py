@@ -202,7 +202,7 @@ class TestCanvas(RotatableCanvas):
         scaleX = 1.0
         scaleY = 1.0
         scaleZ = 1.0 # Will always be 1.0 since we don't scale depth yet
-        scaleW = 1.6 # A global scale factor. Higher = smaller object on screen. 
+        scaleW = 1.0 # A global scale factor. Higher = smaller object on screen. 
 
         if width > height:
             scaleX = height / width
