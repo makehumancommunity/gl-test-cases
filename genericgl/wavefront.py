@@ -20,7 +20,9 @@ class Wavefront():
         # These are internal work arrays
 
         self._rawVertices = []
-        self._rawFaces = []        
+        self._rawTexCo = []        
+        self._rawVertexTexCo = [];
+        self._rawFaces = []
         self._vertexBelongsToFaces = None
         self._faceVertCache = None
 
@@ -47,7 +49,10 @@ class Wavefront():
         # Make a sweep for vertices as faces need that information
         self._extractVertices()
 
-        # Make a second sweep for faces
+        # Make a sweep for texture coordinates, as faces need that too
+        self._extractTextureCoordinates()
+
+        # Make a sweep for faces
         self._extractFaces()
 
         # TODO: Find texture coordinates for vertices
@@ -113,6 +118,24 @@ class Wavefront():
                         z = float(parts[3])
                         vertex = [x, y, z]
                         self._rawVertices.append(vertex)
+                        self._rawVertexTexCo.append([0,0])
+
+
+    def _extractTextureCoordinates(self):
+
+        self.hasTexCo = False
+
+        for line in self.content:
+            strippedLine = line.strip()
+            if not strippedLine is None and not strippedLine == "" and not strippedLine[0] == "#":
+                parts = strippedLine.split(' ')
+                if len(parts) > 1:
+                    command = parts[0]
+                    if command == "vt":
+                        x = float(parts[1])
+                        y = float(parts[2])
+                        texco = [x, y]
+                        self._rawTexCo.append(texco)
 
 
     def _distanceBetweenVerticesByIdx(self, idx1, idx2):
@@ -153,7 +176,7 @@ class Wavefront():
                         vidx1 = int(vInfo1[0]) - 1
                         vidx2 = int(vInfo2[0]) - 1
                         vidx3 = int(vInfo3[0]) - 1
-
+                        
                         if len(parts) == 4:
                             if self._mode == "ONLYQUADS":
                                 raise ValueError("Found tri although mode was ONLYQUADS")
@@ -182,6 +205,23 @@ class Wavefront():
                                 face = [vidx2, vidx3, vidx1]
                                 self._rawFaces.append(face)
 
+                        i = 1
+                        while i < len(parts):
+
+                            f = parts[i].split('/')
+                            if len(f) > 1:
+                                vidx = int(f[0]) - 1 # Vertex index
+                                tidx = int(f[1]) - 1 # Texture coordinate index
+
+                                texco = self._rawTexCo[tidx] # Actual texture coordinats, x/y
+
+                                #print("TEXCO: " + str(i) + " " + str(tidx) + " " + str(texco))
+                                self._rawVertexTexCo[vidx] = texco
+
+                                self.hasTexCo = True
+
+                            i = i + 1
+
 
     def _createFacesNumpyArray(self, assumeQuads = False):
 
@@ -207,6 +247,9 @@ class Wavefront():
 
         numberOfVertices = len(self._rawVertices)
 
+        if numberOfVertices != len(self._rawVertexTexCo):
+            raise ValueError("Not same number of elements in texco array")
+
         # Convert raw coords from wavefront into a 2d numpy array
         self.vertexCoords = numpy.array( self._rawVertices, dtype=float )
 
@@ -215,8 +258,10 @@ class Wavefront():
         self.vertexNormals = numpy.zeros( (numberOfVertices, 3), dtype=float )
 
         # Create a two-dimensional float array with shape (numVerts/2) and 
-        # fill it with zeros. This will contain vertex texture coordinates.
-        self.vertexTexCo = numpy.zeros( (numberOfVertices, 2), dtype=float )
+        # fill it with texture coordinates. 
+        self.vertexTexCo = numpy.array( self._rawVertexTexCo, dtype=float )
+
+    
 
 
     def recalculateVertexNormals(self, assumeQuads = False):
@@ -361,6 +406,10 @@ class Wavefront():
     def getVertexAndNormalArray(self):
         # This should possibly be cached
         return numpy.hstack( (self.vertexCoords, self.vertexNormals) )
+
+    def getVertexAndNormalAndTexCoArray(self):
+        # This should possibly be cached
+        return numpy.hstack( (self.vertexCoords, self.vertexNormals, self.vertexTexCo) )
 
 
     def getFaceArray(self):
