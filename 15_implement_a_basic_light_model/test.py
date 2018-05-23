@@ -14,19 +14,20 @@ from genericgl import TestApplication
 from genericgl import RotatableCanvas
 from genericgl import info
 from genericgl import Wavefront
+from genericgl.testapplication import _TestApplication
 
 import array
 import json
 
+from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-
 
 class TestCanvas(RotatableCanvas):
 
     def __init__(self):
 
-        self.suzanne = Wavefront("../objs/suzanne_triangulated.obj")
+        self.suzanne = Wavefront("../objs/stripped_base_mesh.obj")
 
         with open("vertex.glsl","r") as f:
             self.vertexShaderSource = f.read()
@@ -43,6 +44,11 @@ class TestCanvas(RotatableCanvas):
         # Use an initial scale assuming width = height (should always be overwritten
         # in the resizeGL method below)
         self.currentScaling = QVector4D(1.0, 1.0, 1.0, 1.0)
+
+        self.diffuseStrength = 0.8
+        self.ambientStrength = 0.2
+        self.specularStrength = 0.1
+        self.specularHardness = 6
 
         super(TestCanvas,self).__init__()
 
@@ -68,6 +74,12 @@ class TestCanvas(RotatableCanvas):
 
         # Find the uniform location for controling the rotation of the object
         self.objectRotation = self.program.uniformLocation("objectRotation")
+
+        # Find light setting uniforms
+        self.diffuseStrengthUniform = self.program.uniformLocation("diffuseStrength")
+        self.ambientStrengthUniform = self.program.uniformLocation("ambientStrength")
+        self.specularStrengthUniform = self.program.uniformLocation("specularStrength")
+        self.specularHardnessUniform = self.program.uniformLocation("specularHardness")
 
         # This returns a numpy array with the shape [ [XYZNNN] [XYZNNN] ... ]
         self.vertices2d = self.suzanne.getVertexAndNormalArray()
@@ -161,6 +173,12 @@ class TestCanvas(RotatableCanvas):
         self.currentRotation = QVector3D(self.xRot / 16, self.yRot / 16, self.zRot / 16)
         self.program.setUniformValue(self.objectRotation, self.currentRotation)
 
+        # Set light uniforms
+        self.program.setUniformValue(self.diffuseStrengthUniform, self.diffuseStrength)
+        self.program.setUniformValue(self.ambientStrengthUniform, self.ambientStrength)
+        self.program.setUniformValue(self.specularStrengthUniform, self.specularStrength)
+        self.program.setUniformValue(self.specularHardnessUniform, float(self.specularHardness))
+
         # Before painting we set the scaling "uniform" parameter in the vertex shader.
         # This will be used to scale the vertex positions. 
         self.program.setUniformValue(self.viewportScaling, self.currentScaling)
@@ -203,7 +221,120 @@ class TestCanvas(RotatableCanvas):
         self.verticesBuffer.destroy()
         del self.program
 
-app = TestApplication(sys.argv, TestCanvas)
+    def updateParameters(self, diffuseStrength, ambientStrength, specularStrength, specularHardness):
+
+        self.diffuseStrength = diffuseStrength
+        self.ambientStrength = ambientStrength
+        self.specularStrength = specularStrength
+        self.specularHardness = specularHardness
+
+        self.update()
+
+
+class SettingsWidget(QWidget):
+
+    def __init__(self, mainWidget):
+
+        super(SettingsWidget, self).__init__()
+
+        self.mainWidget = mainWidget
+
+        self.layout = QVBoxLayout(self)
+
+        self.diffuseStrength = 0.8
+        self.ambientStrength = 0.2
+        self.specularStrength = 0.1
+        self.specularHardness = 6
+
+        self.diffuseStrengthLabel = QLabel("-")
+        self.ambientStrengthLabel = QLabel("-")
+        self.specularStrengthLabel = QLabel("-")
+        self.specularHardnessLabel = QLabel("-")
+        
+        self.diffuseStrengthSlider = QScrollBar(Qt.Horizontal)
+        self.ambientStrengthSlider = QScrollBar(Qt.Horizontal)
+        self.specularStrengthSlider = QScrollBar(Qt.Horizontal)
+        self.specularHardnessSlider = QScrollBar(Qt.Horizontal)
+
+        self.diffuseStrengthSlider.setMinimum(0)
+        self.diffuseStrengthSlider.setMaximum(10)
+        self.diffuseStrengthSlider.setPageStep(1)
+        self.diffuseStrengthSlider.setSingleStep(1)
+        self.diffuseStrengthSlider.setValue(int(10 * self.diffuseStrength))
+        self.diffuseStrengthSlider.valueChanged.connect(self.sliderMoved)
+
+        self.ambientStrengthSlider.setMinimum(0)
+        self.ambientStrengthSlider.setMaximum(10)
+        self.ambientStrengthSlider.setPageStep(1)
+        self.ambientStrengthSlider.setSingleStep(1)
+        self.ambientStrengthSlider.setValue(int(10 * self.ambientStrength))
+        self.ambientStrengthSlider.valueChanged.connect(self.sliderMoved)
+
+        self.specularStrengthSlider.setMinimum(0)
+        self.specularStrengthSlider.setMaximum(10)
+        self.specularStrengthSlider.setPageStep(1)
+        self.specularStrengthSlider.setSingleStep(1)
+        self.specularStrengthSlider.setValue(int(10 * self.specularStrength))
+        self.specularStrengthSlider.valueChanged.connect(self.sliderMoved)
+
+        self.specularHardnessSlider.setMinimum(1)
+        self.specularHardnessSlider.setMaximum(64)
+        self.specularHardnessSlider.setPageStep(1)
+        self.specularHardnessSlider.setSingleStep(1)
+        self.specularHardnessSlider.setValue(self.specularHardness)
+        self.specularHardnessSlider.valueChanged.connect(self.sliderMoved)
+
+        self.layout.addWidget(self.diffuseStrengthLabel)
+        self.layout.addWidget(self.diffuseStrengthSlider)
+        self.layout.addWidget(self.ambientStrengthLabel)
+        self.layout.addWidget(self.ambientStrengthSlider)
+        self.layout.addWidget(self.specularStrengthLabel)
+        self.layout.addWidget(self.specularStrengthSlider)
+        self.layout.addWidget(self.specularHardnessLabel)
+        self.layout.addWidget(self.specularHardnessSlider)
+
+        self.layout.addStretch()    
+        self.resize(600, 600);
+
+        self.updateLabels()
+
+    # Override if necessary                                                                                        
+    def minimumSizeHint(self):                                                                                     
+        return QSize(200, 200)                                                                                       
+
+    def sizeHint(self):                                                                                            
+        return QSize(600, 600)
+
+    def updateLabels(self):
+        self.diffuseStrengthLabel.setText("diffuseStrength: " + str(self.diffuseStrength))
+        self.ambientStrengthLabel.setText("<br />ambientStrength: " + str(self.ambientStrength))
+        self.specularStrengthLabel.setText("<br />specularStrength: " + str(self.specularStrength))
+        self.specularHardnessLabel.setText("<br />specularHardness: " + str(self.specularHardness))
+
+    def sliderMoved(self):
+
+        self.diffuseStrength = self.diffuseStrengthSlider.value() / 10
+        self.ambientStrength = self.ambientStrengthSlider.value() / 10
+        self.specularStrength = self.specularStrengthSlider.value() / 10
+        self.specularHardness = self.specularHardnessSlider.value()
+
+        self.updateLabels()
+
+        self.mainWidget.updateParameters(self.diffuseStrength, self.ambientStrength, self.specularStrength, self.specularHardness)
+
+
+class SettingsApplication(_TestApplication):
+
+    def __init__(self, args, glWidget = QOpenGLWidget):
+
+        super(SettingsApplication, self).__init__(args, glWidget)
+
+        self.settingsWidget = SettingsWidget(self.mainWidget)
+        self.layout.addWidget(self.settingsWidget)
+        self.mainWin.resize(1200,600)
+
+
+app = SettingsApplication(sys.argv, TestCanvas)
 app.exec_()
 del app
 sys.exit()
