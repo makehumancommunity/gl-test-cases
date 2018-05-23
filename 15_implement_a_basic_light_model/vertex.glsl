@@ -1,6 +1,6 @@
 #version 120
 
-// Declare an attribut (in practice parameter) that can be used
+// Declare an attribute (in practice parameter) that can be used
 // from the outside to control the behavior of the shader
 attribute vec4 somePosition;
 
@@ -8,15 +8,16 @@ attribute vec4 somePosition;
 // the normal of a vertex being drawn
 attribute vec4 inputNormal;
 
-// Declare a connector to the fragment shader (see comment there)
-varying vec4 outputColor;
-
 // Use a constant color for all vertices (will be modified by 
 // light position)
 uniform vec3 inputColor = vec3(1.0, 0.3, 0.3);
 
-// Put a directional light at front left 
+// Settings related to light
 uniform vec4 lampPosition = vec4(-1.0, 1.0, -1.0, 1.0);
+uniform float specularHardness = 6.0;
+uniform float specularStrength = 0.2;
+uniform float diffuseStrength = 0.8;
+uniform float ambientStrength = 0.2;
 
 // Declare a semi-constant for rotating the vertex positions (around 
 // origin). We give the default of no rotation.
@@ -30,9 +31,12 @@ uniform vec4 viewportScaling = vec4(1.0, 1.0, 1.0, 1.0);
 uniform vec4 viewNormal = vec4(0.0, 0.0, -1.0, 1.0);
 
 // for forwarding to fragment shader
+varying vec4 outputColor;
 varying vec4 outViewNormal;
 varying vec4 outVertexNormal;
 varying vec4 outLightDirection;
+varying float outSpecularHardness;
+varying float outSpecularStrength;
 
 
 void main() {
@@ -77,21 +81,26 @@ void main() {
   float diffuseLightCoefficient = max(0.0, dotProduct);
 
   // Calculate the diffuse light contribution to the overall color
-  vec3 diffuseColors = inputColor * diffuseLightCoefficient;
+  vec3 diffuseColors = inputColor * diffuseLightCoefficient * diffuseStrength;
 
   // Calculate an ambient contribution to the overall color
-  vec3 ambientColors = inputColor * 0.2;
+  vec3 ambientColors = inputColor * ambientStrength;
 
-  // Add all light contributions together
+  // Add all (vertex shader) light contributions together. Specular
+  // light is calculated in the fragment shader
   vec3 colors = diffuseColors + ambientColors;
   
-  // Convert to a vec4 and clamp values higher than 1.0. That should never happen, but doesn't hurt. 
-  vec4 modifiedColor = vec4(min(1.0, colors.r), min(1.0, colors.g), min(1.0, colors.b), 1.0);
+  // Convert to a vec4 
+  vec4 modifiedColor = vec4(colors, 1.0);
 
   // Pass on the resulting color to the fragment shader
   outputColor = modifiedColor;
 
-  // Pass some variables explicitly to the fragment shader
+  // Forward uniform settings
+  outSpecularHardness = specularHardness;
+  outSpecularStrength = specularStrength;
+
+  // Forward calculated variables 
   outViewNormal = viewNormal;
   outVertexNormal = normalizedRotatedNormal;
   outLightDirection = normalizedLightDirection;

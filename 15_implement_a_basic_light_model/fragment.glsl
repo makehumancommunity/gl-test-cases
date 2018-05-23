@@ -8,6 +8,10 @@ varying vec4 outViewNormal;
 varying vec4 outVertexNormal;
 varying vec4 outLightDirection;
 
+// Uniforms forwarded from the vertex shader
+varying float outSpecularHardness;
+varying float outSpecularStrength;
+
 void main() {
 
   // Calculate reflected light normal
@@ -19,7 +23,7 @@ void main() {
 
   // These lines should be updated once I get a better understanding of 
   // the phong model
-  float specularLightCoefficient = max(0.0, min(1.0, pow(specularCos,4.0)) - 0.4);
+  float specularLightCoefficient = max( 0.0, pow(specularCos,outSpecularHardness) * outSpecularStrength );
   vec4 specularColors = outputColor * specularLightCoefficient;
   vec4 colors = specularColors + outputColor;
 
