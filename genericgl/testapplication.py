@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from PyQt5.QtWidgets import QApplication, QWidget, QOpenGLWidget, QVBoxLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QOpenGLWidget, QHBoxLayout
 from PyQt5.QtGui import QSurfaceFormat, QOpenGLContext
 from PyQt5.QtCore import QT_VERSION_STR
 
@@ -41,7 +41,7 @@ class _TestApplication(QApplication):
 
         self.mainWidget = glWidget()
 
-        self.layout = QVBoxLayout(self.mainWin)
+        self.layout = QHBoxLayout(self.mainWin)
         self.layout.addWidget(self.mainWidget)
 
         self.mainWin.show()
