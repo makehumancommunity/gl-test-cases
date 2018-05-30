@@ -209,16 +209,16 @@ class Wavefront():
                         while i < len(parts):
 
                             f = parts[i].split('/')
+
                             if len(f) > 1:
                                 vidx = int(f[0]) - 1 # Vertex index
-                                tidx = int(f[1]) - 1 # Texture coordinate index
 
-                                texco = self._rawTexCo[tidx] # Actual texture coordinats, x/y
-
-                                #print("TEXCO: " + str(i) + " " + str(tidx) + " " + str(texco))
-                                self._rawVertexTexCo[vidx] = texco
-
-                                self.hasTexCo = True
+                                ti = f[1] # May be empty if no UV unwrap
+                                if ti != "":
+                                    tidx = int(ti) - 1 # Texture coordinate index
+                                    texco = self._rawTexCo[tidx] # Actual texture coordinats, x/y
+                                    self._rawVertexTexCo[vidx] = texco
+                                    self.hasTexCo = True
 
                             i = i + 1
 
